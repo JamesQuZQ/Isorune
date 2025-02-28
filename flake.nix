@@ -18,7 +18,7 @@
     {
       devShells.x86_64-darwin.default = pkgs.mkShell {
         nativeBuildInputs = with pkgs; [
-          nodejs
+          nodejs_latest
           vtsls
           pnpm
           prettierd
