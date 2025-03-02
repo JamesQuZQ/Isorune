@@ -1,9 +1,9 @@
-import * as DAT from "dat.gui";
+import GUI from "lil-gui";
 
 export class Config {
   constructor() {}
 
   Init() {
-    return new DAT.GUI();
+    return new GUI();
   }
 }

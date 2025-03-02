@@ -2,15 +2,13 @@ import * as THREE from "three";
 import { createMultiMaterialObject } from "three/examples/jsm/utils/SceneUtils";
 
 export class Terrain {
-  constructor(app, color = 0x000000) {
+  constructor(color = 0x000000) {
     this.color = new THREE.Color(color);
-    this.Init(app);
-    this._GetConfig(app.gui);
+    this.Init();
   }
 
-  Init(app) {
+  Init() {
     this._Create();
-    app.scene.add(this.mesh);
   }
 
   ReBuild() {
@@ -18,7 +16,18 @@ export class Terrain {
     this.geo.computeVertexNormals();
   }
 
-  _GetConfig(gui) {
+  BuildRandomMap(noise) {
+    for (let vertex = 0; vertex < this.vertices.count; vertex++) {
+      const x = this.vertices.getX(vertex);
+      const y = this.vertices.getY(vertex);
+      this.vertices.setZ(vertex, noise.Get2D(x, y));
+    }
+
+    this.geo.verticesNeedUpdate = true;
+    this.geo.computeVertexNormals();
+  }
+
+  GetConfig(gui) {
     const terrainConfig = gui.addFolder("Terrain Config");
   }
 
@@ -63,13 +72,14 @@ export class Terrain {
   };
 
   _Create = () => {
-    this.geo = new THREE.PlaneGeometry(20, 20, 20, 20);
+    this.geo = new THREE.PlaneGeometry(200, 200, 200, 200);
+    this.vertices = this.geo.attributes.position;
     this.mat = new THREE.MeshBasicMaterial({
       color: this.color,
       wireframe: true,
     });
 
     this.mesh = new THREE.Mesh(this.geo, this.mat);
-    this.mesh.position.z = -0.5;
+    // this.mesh.position.z = -0.5;
   };
 }

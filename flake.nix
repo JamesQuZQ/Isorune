@@ -20,7 +20,7 @@
         nativeBuildInputs = with pkgs; [
           nodejs_latest
           vtsls
-          pnpm
+          pnpm_10
           prettierd
         ];
 

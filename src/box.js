@@ -1,18 +1,20 @@
 import * as THREE from "three";
 
 export class Box {
-  constructor(app, color = 0xffff10) {
+  constructor(color = 0xffff10, position) {
     this.color = new THREE.Color(color);
-    this.Init(app);
+    this.position = position;
+
+    this.Init();
   }
 
-  Init(app) {
-    this.Create();
-    app.scene.add(this.mesh);
+  Init() {
+    this.Create_Singular();
   }
 
-  Create() {
+  Create_Singular() {
     this.geo = new THREE.BoxGeometry(1, 1, 1);
+    this.geo.translate(this.position.x, this.position.y, this.position.z * 0.5);
     this.mat = new THREE.MeshBasicMaterial({
       color: this.color,
     });
@@ -20,13 +22,9 @@ export class Box {
     this.mesh = new THREE.Mesh(this.geo, this.mat);
   }
 
-  RandomPlace(self) {
-    const w = 10;
-    this.mesh.position.setX(
-      Math.round(Math.random()) * 2 - 1 * Math.floor(Math.random() * w),
-    );
-    this.mesh.position.setY(
-      Math.round(Math.random()) * 2 - 1 * Math.floor(Math.random() * w),
-    );
+  Create_Multiple() {
+    const geo = new THREE.BoxGeometry(1, 1, this.height);
+    geo.translate(this.position.x, this.position.y, this.height * 0.5);
+    return geo;
   }
 }
