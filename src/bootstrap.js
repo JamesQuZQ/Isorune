@@ -13,16 +13,14 @@ export class Bootstrap {
   gui;
 
   constructor() {
-    this._Init();
+    this.#Init();
     this.GetConfig();
   }
 
-  _Init() {
-    const canvas = document.querySelector("#my_canvas");
-    this.renderer = new THREE.WebGLRenderer({ antialias: true, canvas });
-    this.renderer.shadowMap.enabled = true;
-    this.renderer.physicallyCorrectLights = true;
-    this.renderer.setSize(window.innerWidth, window.innerHeight);
+  #Init() {
+    this.textures = new Map([["grass", "something"]]);
+
+    this.renderer = this.CreateRenderer();
 
     this.scene = new THREE.Scene();
     this.scene.rotateX(-Math.PI * 0.5);
@@ -41,6 +39,18 @@ export class Bootstrap {
     window.addEventListener("resize", this.OnWindowResize, false);
   }
 
+  CreateRenderer() {
+    const canvas = document.querySelector("#my_canvas");
+    const renderer = new THREE.WebGLRenderer({ antialias: true, canvas });
+    renderer.setSize(window.innerWidth, window.innerHeight);
+    renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    renderer.outputEncoding = THREE.sRGBEncoding;
+    renderer.physicallyCorrectLights = true;
+    renderer.shadowMap.enabled = true;
+    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    return renderer;
+  }
+
   CreateCamera() {
     const camera = new THREE.PerspectiveCamera(
       50,
@@ -49,7 +59,7 @@ export class Bootstrap {
       1000,
     );
 
-    camera.position.set(70, 100, 0);
+    camera.position.set(30, 35, -10);
     return camera;
   }
 
