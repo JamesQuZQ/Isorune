@@ -1,7 +1,7 @@
 import * as THREE from "three";
 import { OrbitControls } from "three/examples/jsm/Addons.js";
 import Stats from "three/examples/jsm/libs/stats.module.js";
-import { Config } from "./config";
+import { Debugger } from "@/debugger";
 
 export class Bootstrap {
   renderer;
@@ -18,13 +18,19 @@ export class Bootstrap {
   }
 
   #Init() {
-    this.textures = new Map([["grass", "something"]]);
-
     this.renderer = this.CreateRenderer();
+
+    // const pmrem = new THREE.PMREMGenerator(this.renderer);
+    // pmrem.compileEquirectangularShader();
+    //
+    // let envmapTexture = new RGBELoader.load(enviromentMap, (texture) => {
+    //   texture.mapping = pmrem.fromEquirectangular(texture).texture;
+    // });
+    // pmrem.dispose();
 
     this.scene = new THREE.Scene();
     this.scene.rotateX(-Math.PI * 0.5);
-    this.scene.background = new THREE.Color("skyblue");
+    this.scene.background = new THREE.Color("#96c5fa");
 
     this.camera = this.CreateCamera();
     this.axesHelper = this.CreateAxesHelper();
@@ -33,10 +39,10 @@ export class Bootstrap {
 
     this.scene.add(this.axesHelper);
 
-    const config = new Config();
+    const config = new Debugger();
     this.gui = config.Init();
 
-    window.addEventListener("resize", this.OnWindowResize, false);
+    window.addEventListener("resize", this.#OnWindowResize, false);
   }
 
   CreateRenderer() {
@@ -46,8 +52,8 @@ export class Bootstrap {
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.outputEncoding = THREE.sRGBEncoding;
     renderer.physicallyCorrectLights = true;
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    // renderer.shadowMap.enabled = true;
+    // renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     return renderer;
   }
 
@@ -92,12 +98,7 @@ export class Bootstrap {
     return orbCtl;
   }
 
-  Render() {
-    this.renderer.render(this.scene, this.camera);
-    this.stats.update();
-  }
-
-  OnWindowResize() {
+  #OnWindowResize() {
     // const canvas = this.renderer.domElement;
     const width = window.innerWidth;
     const height = window.innerHeight;
