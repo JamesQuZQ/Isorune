@@ -1,6 +1,6 @@
-import { Vector2 } from "three";
-import { Box } from "./box";
-import { GeoContainer } from "./geo_container";
+import { Vector2 } from 'three';
+import { Box } from './box';
+import { GeoContainer } from './geo_container';
 
 export class Chunk {
   constructor(textures, edge, size, envmap) {
@@ -14,12 +14,12 @@ export class Chunk {
 
   #InitBiome(textures, envmap) {
     this.biomes = {
-      grass: new GeoContainer(textures["grass"], envmap),
-      rock: new GeoContainer(textures["mountantRock"], envmap),
-      stone: new GeoContainer(textures["rock"], envmap),
-      snow: new GeoContainer(textures["snow"], envmap),
-      soil: new GeoContainer(textures["soil"], envmap),
-      sand: new GeoContainer(textures["sand"], envmap),
+      grass: new GeoContainer(textures['grass'], envmap),
+      rock: new GeoContainer(textures['mountantRock'], envmap),
+      stone: new GeoContainer(textures['rock'], envmap),
+      snow: new GeoContainer(textures['snow'], envmap),
+      soil: new GeoContainer(textures['soil'], envmap),
+      sand: new GeoContainer(textures['sand'], envmap),
     };
   }
 

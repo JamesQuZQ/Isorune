@@ -1,4 +1,4 @@
-import GUI from "lil-gui";
+import GUI from 'lil-gui';
 
 export class Debugger {
   constructor() {}

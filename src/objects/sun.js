@@ -1,9 +1,9 @@
-import { Color, PointLight } from "three";
+import { Color, PointLight } from 'three';
 
 export class Sun {
   constructor() {
     const light = new PointLight(
-      new Color("#FFCB8E").convertSRGBToLinear().convertSRGBToLinear(),
+      new Color('#FFCB8E').convertSRGBToLinear().convertSRGBToLinear(),
       2,
       200,
     );

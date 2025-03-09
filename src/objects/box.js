@@ -1,4 +1,4 @@
-import { BoxGeometry, Color, Mesh, MeshBasicMaterial } from "three";
+import { BoxGeometry, Color, Mesh, MeshBasicMaterial } from 'three';
 
 export class Box {
   constructor() {}

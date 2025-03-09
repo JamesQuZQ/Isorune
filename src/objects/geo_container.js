@@ -1,5 +1,5 @@
-import { BoxGeometry, Mesh, MeshPhysicalMaterial, Vector3 } from "three";
-import { mergeGeometries } from "three/examples/jsm/utils/BufferGeometryUtils.js";
+import { BoxGeometry, Mesh, MeshPhysicalMaterial, Vector3 } from 'three';
+import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 export class GeoContainer {
   constructor(texture) {

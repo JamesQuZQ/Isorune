@@ -1,4 +1,4 @@
-import { Clock } from "three";
+import { Clock } from 'three';
 
 export class Loop {
   #updateables;

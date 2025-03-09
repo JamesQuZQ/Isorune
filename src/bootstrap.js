@@ -1,17 +1,9 @@
-import * as THREE from "three";
-import { OrbitControls } from "three/examples/jsm/Addons.js";
-import Stats from "three/examples/jsm/libs/stats.module.js";
-import { Debugger } from "@/debugger";
+import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/Addons.js';
+import Stats from 'three/examples/jsm/libs/stats.module.js';
+import { Debugger } from '@/debugger';
 
 export class Bootstrap {
-  renderer;
-  scene;
-  camera;
-  axesHelper;
-  stats;
-  control;
-  gui;
-
   constructor() {
     this.#Init();
     this.GetConfig();
@@ -20,17 +12,9 @@ export class Bootstrap {
   #Init() {
     this.renderer = this.CreateRenderer();
 
-    // const pmrem = new THREE.PMREMGenerator(this.renderer);
-    // pmrem.compileEquirectangularShader();
-    //
-    // let envmapTexture = new RGBELoader.load(enviromentMap, (texture) => {
-    //   texture.mapping = pmrem.fromEquirectangular(texture).texture;
-    // });
-    // pmrem.dispose();
-
     this.scene = new THREE.Scene();
     this.scene.rotateX(-Math.PI * 0.5);
-    this.scene.background = new THREE.Color("#96c5fa");
+    this.scene.background = new THREE.Color('#96c5fa');
 
     this.camera = this.CreateCamera();
     this.axesHelper = this.CreateAxesHelper();
@@ -42,18 +26,18 @@ export class Bootstrap {
     const config = new Debugger();
     this.gui = config.Init();
 
-    window.addEventListener("resize", this.#OnWindowResize, false);
+    window.addEventListener('resize', this.#OnWindowResize, false);
   }
 
   CreateRenderer() {
-    const canvas = document.querySelector("#my_canvas");
+    const canvas = document.querySelector('#my_canvas');
     const renderer = new THREE.WebGLRenderer({ antialias: true, canvas });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.outputEncoding = THREE.sRGBEncoding;
     renderer.physicallyCorrectLights = true;
     // renderer.shadowMap.enabled = true;
-    // renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    // renderer.shadowMap.type = PCFSoftShadowMap;
     return renderer;
   }
 
@@ -88,7 +72,7 @@ export class Bootstrap {
     /* NOTE:
      * Only re-render when the control change gives us better performance
      * */
-    orbCtl.addEventListener("change", () => {
+    orbCtl.addEventListener('change', () => {
       this.renderer.render(this.scene, this.camera);
     });
 
@@ -115,6 +99,6 @@ export class Bootstrap {
   }
 
   GetConfig() {
-    const appConfig = this.gui.addFolder("App Config");
+    const appConfig = this.gui.addFolder('App Config');
   }
 }

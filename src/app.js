@@ -1,8 +1,7 @@
-import { Bootstrap } from "@/bootstrap";
-import { Loop } from "@/logics/loop";
+import { Bootstrap } from './bootstrap';
+import { Loop } from '@/logics/loop';
 
 export class App {
-  #textures;
   constructor() {
     this.config = new Bootstrap();
     this.loop = new Loop(this.camera, this.scene, this.renderer);
