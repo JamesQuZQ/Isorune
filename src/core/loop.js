@@ -1,11 +1,15 @@
 import { Clock } from 'three';
+import { App } from '@/core/app';
 
 export class Loop {
   #updateables;
-  constructor(camera, scene, renderer) {
-    this.camera = camera;
-    this.scene = scene;
-    this.renderer = renderer;
+  constructor() {
+    /** @import {App} from "./app.js" */
+    const app = new App();
+
+    this.camera = app.camera;
+    this.scene = app.scene;
+    this.renderer = app.renderer;
     this.#updateables = [];
     this.clock = new Clock();
   }
@@ -37,4 +41,9 @@ export class Loop {
   Add(object) {
     this.#updateables.push(object);
   }
+
+  /** TODO: remove object in updateables after event
+   * @param {Object} object_index - the object to remove from updateables
+   */
+  Remove(object_index) {}
 }

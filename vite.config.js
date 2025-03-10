@@ -1,16 +1,19 @@
-import { defineConfig } from "vite";
-import { path } from "path";
+import { defineConfig } from 'vite';
+import { fileURLToPath } from 'node:url';
+import { dirname, resolve } from 'node:path';
+
+const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
   resolve: {
     alias: {
-      "@": path.resolve(__dirname, "./src"),
+      '@': resolve(__dirname, 'src'),
     },
   },
-  assetsInclude: ["**/*.hdr"],
-  root: ".",
+  assetsInclude: ['**/*.hdr'],
+  root: '.',
   build: {
-    assetsDir: "assets",
+    assetsDir: 'assets',
     sourcemap: true,
     minify: true,
   },

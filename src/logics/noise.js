@@ -10,7 +10,6 @@ export class Noise {
     this.persistant = 0.2;
     this.lacunarity = 5;
     this.octaves = 1;
-    this.max_height = 70;
   }
 
   WithConfig(gui) {
@@ -36,7 +35,7 @@ export class Noise {
     }
 
     total = total / normalization;
-    return Math.pow(total, this.exponentiation) * this.max_height;
+    return Math.pow(total, this.exponentiation);
   }
 
   Get2D(x, y) {

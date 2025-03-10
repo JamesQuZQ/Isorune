@@ -1,8 +1,17 @@
-import { Vector2 } from 'three';
-import { Box } from './box';
-import { GeoContainer } from './geo_container';
+import { BoxGeometry } from 'three';
+import { GeoContainer } from '@/objects/geo_container';
 
 export class Chunk {
+  static SNOW_HEIGHT = 40;
+  static MOUNTANTROCk_HEIGHT = 27;
+  static STONE_HEIGHT = 10;
+  static GRASS_HEIGHT = 3;
+  static SAND_HEIGHT = 0.4;
+  static SOIL_HEIGHT = 0;
+  static RIVER_HEIGHT = 0.2;
+
+  static MAX_TERRAIN_HEIGHT = 70;
+
   constructor(textures, edge, size, envmap) {
     this.edge = edge;
     this.size = size;
@@ -23,48 +32,32 @@ export class Chunk {
     };
   }
 
-  NewEdge(newEdge) {
-    this.edge.x = newEdge.x;
-    this.edge.y = newEdge.y;
-  }
+  CreateChunk(noise) {
+    for (let y = this.edge.y; y < this.edge.y + this.size.y; y++) {
+      for (let x = this.edge.x; x < this.edge.x + this.size.x; x++) {
+        const height = noise.GetOctave(x, y) * Chunk.MAX_TERRAIN_HEIGHT;
 
-  Create(noise) {
-    const vecPos = new Vector2();
+        const geo = new BoxGeometry(1, 1, height);
+        geo.translate(x, y, height * 0.5);
 
-    const grass = [];
-    const rock = [];
-    const stone = [];
-    const snow = [];
-    const soil = [];
-    const sand = [];
-    for (let y = this.edge.y; y < 40; y++) {
-      for (let x = this.edge.x; x < 40; x++) {
-        const height = noise.GetOctave(x, y);
-        vecPos.set(x, y);
-        const box = new Box().CreateGeometry();
-        box.SetPos(vecPos, height);
-        if (height > 30) {
-          snow.push(box.geo);
-        } else if (25 < height) {
-          rock.push(box.geo);
-        } else if (12 < height) {
-          stone.push(box.geo);
-        } else if (2 < height) {
-          grass.push(box.geo);
-        } else if (0.5 < height) {
-          sand.push(box.geo);
-        } else if (0 < height) {
-          soil.push(box.geo);
+        if (Chunk.SNOW_HEIGHT < height) {
+          this.biomes.snow.Merge(geo);
+        } else if (Chunk.MOUNTANTROCk_HEIGHT < height) {
+          this.biomes.rock.Merge(geo);
+        } else if (Chunk.STONE_HEIGHT < height) {
+          this.biomes.stone.Merge(geo);
+        } else if (Chunk.GRASS_HEIGHT < height) {
+          this.biomes.grass.Merge(geo);
+        } else if (Chunk.SAND_HEIGHT < height) {
+          this.biomes.sand.Merge(geo);
+        } else if (Chunk.SOIL_HEIGHT < height) {
+          this.biomes.soil.Merge(geo);
         }
+
+        geo.dispose();
       }
     }
 
-    this.biomes.grass.Merge(grass);
-    this.biomes.rock.Merge(rock);
-    this.biomes.snow.Merge(snow);
-    this.biomes.stone.Merge(stone);
-    this.biomes.soil.Merge(soil);
-    this.biomes.sand.Merge(sand);
     return this;
   }
 }

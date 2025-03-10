@@ -10,7 +10,7 @@ export class GeoContainer {
 
   Merge(geo) {
     if (!geo) return this;
-    this.container = mergeGeometries([this.container, ...geo], false);
+    this.container = mergeGeometries([this.container, geo], false);
     return this;
   }
 
@@ -30,17 +30,18 @@ export class GeoContainer {
   }
 
   async BuildAsync() {
-    const mesh = new Mesh(
-      this.container,
-      new MeshPhysicalMaterial({
-        color: 0x000000,
-        wireframe: true,
-      }),
-    );
+    const mat = new MeshPhysicalMaterial({
+      color: 0x000000,
+      wireframe: true,
+    });
+
+    const mesh = new Mesh(this.container, mat);
+
     mesh.castShadow = true;
     mesh.receiveShadow = true;
     this.mesh = mesh;
 
+    mat.dispose();
     return this;
   }
 }

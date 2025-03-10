@@ -1,10 +1,21 @@
-import { Bootstrap } from './bootstrap';
-import { Loop } from '@/logics/loop';
+import { Bootstrap } from '@/core/bootstrap';
+import { Loop } from '@/core/loop';
 
 export class App {
+  //Using Singleton Pattern
+  static _instance;
+
   constructor() {
+    if (App._instance) {
+      return App._instance;
+    }
+
+    App._instance = this;
+
     this.config = new Bootstrap();
     this.loop = new Loop(this.camera, this.scene, this.renderer);
+
+    window.addEventListener('resize', this.config.OnWindowResize, false);
   }
 
   get scene() {
