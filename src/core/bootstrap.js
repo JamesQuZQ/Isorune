@@ -25,8 +25,6 @@ export class Bootstrap {
 
     const config = new Debugger();
     this.gui = config.Init();
-
-    window.addEventListener('resize', this.#OnWindowResize, false);
   }
 
   CreateRenderer() {
@@ -42,13 +40,13 @@ export class Bootstrap {
   }
 
   CreateCamera() {
-    const camera = new THREE.PerspectiveCamera(
-      50,
-      window.innerWidth / window.innerHeight,
-      0.1,
-      1000,
-    );
-
+    // const camera = new THREE.PerspectiveCamera(
+    //   50,
+    //   window.innerWidth / window.innerHeight,
+    //   0.1,
+    //   1000,
+    // );
+    const camera = new THREE.OrthographicCamera(-50, 50, 50, -50, 0.1, 1000);
     camera.position.set(30, 35, -10);
     return camera;
   }
@@ -82,7 +80,7 @@ export class Bootstrap {
     return orbCtl;
   }
 
-  #OnWindowResize() {
+  OnWindowResize() {
     // const canvas = this.renderer.domElement;
     const width = window.innerWidth;
     const height = window.innerHeight;
@@ -94,7 +92,6 @@ export class Bootstrap {
 
     this.renderer.setSize(width, height);
     this.renderer.setPixelRatio(window.devicePixelRatio);
-
     this.renderer.render(this.scene, this.camera);
   }
 

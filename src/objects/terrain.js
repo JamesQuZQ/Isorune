@@ -7,7 +7,7 @@ import sandTexture from '@/assets/textures/sand.jpg';
 import { LoaderHelper } from '@/utils/loader_helper';
 import { Chunk } from '@/objects/terrain_chunk';
 import { Noise } from '@/logics/noise';
-import { Vector2 } from 'three';
+import { Group, Vector2 } from 'three';
 
 //TODO:: for performance assets should load via a CDN
 
@@ -47,13 +47,31 @@ export class Terrain {
   }
 
   CreateChunk(edge, size) {
-    const chunk = new Chunk(
-      this.#textures,
+    const chunk = new Chunk(this.#textures, edge, size, this.envmap);
+
+    return chunk.CreateChunk(this.heightNoise);
+  }
+
+  Generate(app) {
+    const chunk = new Group();
+    const terrain_chunk = this.CreateChunk(
       new Vector2(0, 0),
-      new Vector2(10, 10),
-      this.envmap,
+      new Vector2(50, 50),
     );
 
-    return chunk.Create(this.heightNoise);
+    for (const [_, value] of Object.entries(terrain_chunk.biomes)) {
+      const geoContainer = value.Build();
+      chunk.add(geoContainer.mesh);
+    }
+
+    this.chunks.push(chunk);
+    console.log(chunk);
+    app.AddObject(chunk);
+  }
+
+  UpdateTerrain(newChunk) {
+    this.chunks[0].forEach((geoContainer) => {
+      console.log(geoContainer);
+    });
   }
 }
