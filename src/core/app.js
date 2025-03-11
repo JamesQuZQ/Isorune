@@ -1,8 +1,13 @@
 import { Bootstrap } from '@/core/bootstrap';
 import { Loop } from '@/core/loop';
+import { Terrain } from '@/objects/terrain';
+import { AmbientLight } from 'three';
 
+/** Apply Singleton Pattern
+ *  @property {Bootstrap} config
+ *  @property {Loop} loop
+ * */
 export class App {
-  //Using Singleton Pattern
   static _instance;
 
   constructor() {
@@ -14,7 +19,6 @@ export class App {
 
     this.config = new Bootstrap();
     this.loop = new Loop(this.camera, this.scene, this.renderer);
-
     window.addEventListener('resize', this.config.OnWindowResize, false);
   }
 
@@ -30,8 +34,17 @@ export class App {
     return this.config.renderer;
   }
 
-  Start() {
+  async InitAsync() {
+    const amlight = new AmbientLight(0xffffff, 1);
+    this.AddObject(amlight);
+  }
+
+  async StartAsync() {
     this.loop.Start();
+
+    const terrain = new Terrain();
+    await terrain.InitTextureAsync();
+    await terrain.GenerateAsync(this);
   }
 
   AddObject(object) {
@@ -49,8 +62,7 @@ export class App {
   }
 
   async AddAsync(object) {
-    this.loop.Add(object);
-    this.config.scene.add(object.mesh);
+    this.config.scene.add(object);
   }
 
   Stop() {

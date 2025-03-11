@@ -4,7 +4,6 @@ import { App } from '@/core/app';
 export class Loop {
   #updateables;
   constructor() {
-    /** @import {App} from "./app.js" */
     const app = new App();
 
     this.camera = app.camera;

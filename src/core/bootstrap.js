@@ -1,8 +1,11 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/Addons.js';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
-import { Debugger } from '@/debugger';
+import { Debugger } from '@/tools/debugger';
 
+/**
+ * @property {THREE.Scene} scene
+ */
 export class Bootstrap {
   constructor() {
     this.#Init();
@@ -23,8 +26,7 @@ export class Bootstrap {
 
     this.scene.add(this.axesHelper);
 
-    const config = new Debugger();
-    this.gui = config.Init();
+    this.debugger = new Debugger();
   }
 
   CreateRenderer() {
@@ -96,6 +98,6 @@ export class Bootstrap {
   }
 
   GetConfig() {
-    const appConfig = this.gui.addFolder('App Config');
+    const appConfig = this.debugger.addFolder('App Config');
   }
 }
