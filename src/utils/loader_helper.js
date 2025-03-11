@@ -10,4 +10,14 @@ export class LoaderHelper {
       texture.colorSpace = SRGBColorSpace;
     });
   }
+
+  static async LoadTextureAsync(file) {
+    if (!file) {
+      Error('texture file does not exist');
+    }
+
+    return await new TextureLoader().loadAsync(file, (texture) => {
+      texture.colorSpace = SRGBColorSpace;
+    });
+  }
 }

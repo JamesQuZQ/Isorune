@@ -7,71 +7,53 @@ import sandTexture from '@/assets/textures/sand.jpg';
 import { LoaderHelper } from '@/utils/loader_helper';
 import { Chunk } from '@/objects/terrain_chunk';
 import { Noise } from '@/logics/noise';
-import { Group, Vector2 } from 'three';
+import { Vector2 } from 'three';
 
+/** @import {App} from '@/core/app' */
 //TODO:: for performance assets should load via a CDN
 
 export class Terrain {
   #textures;
-  constructor(params) {
+
+  static TERRAIN_CHUNk_LIMIT = 51;
+  constructor() {
     this.heightNoise = new Noise();
     this.chunks = [];
     this.#textures = {};
-    this.#Init(params);
   }
 
-  get width_limit() {
-    return 200;
-  }
-
-  get height_limit() {
-    return 200;
-  }
-
-  #Init(params) {
-    this.#InitTexture(params);
-  }
-
-  #InitTexture() {
-    this.#textures['grass'] = LoaderHelper.LoadTexture(grassTexture);
+  async InitTextureAsync() {
+    this.#textures['grass'] = await LoaderHelper.LoadTextureAsync(grassTexture);
     this.#textures['mountantRock'] =
-      LoaderHelper.LoadTexture(mountantRockTexture);
-    this.#textures['snow'] = LoaderHelper.LoadTexture(snowTexture);
-    this.#textures['rock'] = LoaderHelper.LoadTexture(rockTexture);
-    this.#textures['soil'] = LoaderHelper.LoadTexture(soilTexture);
-    this.#textures['sand'] = LoaderHelper.LoadTexture(sandTexture);
+      await LoaderHelper.LoadTextureAsync(mountantRockTexture);
+    this.#textures['snow'] = await LoaderHelper.LoadTextureAsync(snowTexture);
+    this.#textures['rock'] = await LoaderHelper.LoadTextureAsync(rockTexture);
+    this.#textures['soil'] = await LoaderHelper.LoadTextureAsync(soilTexture);
+    this.#textures['sand'] = await LoaderHelper.LoadTextureAsync(sandTexture);
   }
 
-  GetTexture(key) {
-    return this.#textures[key];
-  }
-
-  CreateChunk(edge, size) {
-    const chunk = new Chunk(this.#textures, edge, size, this.envmap);
-
-    return chunk.CreateChunk(this.heightNoise);
-  }
-
-  Generate(app) {
-    const chunk = new Group();
-    const terrain_chunk = this.CreateChunk(
-      new Vector2(0, 0),
-      new Vector2(50, 50),
+  async CreateChunkAsync(edge, size, levelOfDetail) {
+    const chunk = new Chunk(
+      this.#textures,
+      edge,
+      size,
+      this.envmap,
+      levelOfDetail,
     );
 
-    for (const [_, value] of Object.entries(terrain_chunk.biomes)) {
-      const geoContainer = value.Build();
-      chunk.add(geoContainer.mesh);
-    }
-
-    this.chunks.push(chunk);
-    console.log(chunk);
-    app.AddObject(chunk);
+    return chunk.CreateChunkAsync(this.heightNoise);
   }
 
-  UpdateTerrain(newChunk) {
-    this.chunks[0].forEach((geoContainer) => {
-      console.log(geoContainer);
-    });
+  /** @param {App} app */
+  async GenerateAsync(app) {
+    const terrain_chunk = await this.CreateChunkAsync(
+      new Vector2(0, 0),
+      Terrain.TERRAIN_CHUNk_LIMIT,
+      2,
+    );
+    for (const [_, value] of Object.entries(terrain_chunk.blockTypes)) {
+      const geoContainer = await value.BuildAsync();
+      await app.AddMeshAsync(geoContainer);
+    }
   }
 }

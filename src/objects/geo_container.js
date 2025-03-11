@@ -1,7 +1,7 @@
 import { BoxGeometry, Mesh, MeshPhysicalMaterial, Vector3 } from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
-export class GeoContainer {
+export class BlockTypeContainer {
   constructor(texture) {
     this.texture = texture;
     this.vector_helper = new Vector3();
@@ -14,34 +14,16 @@ export class GeoContainer {
     return this;
   }
 
-  Build() {
-    const mesh = new Mesh(
-      this.container,
-      new MeshPhysicalMaterial({
-        map: this.texture,
-      }),
-    );
-
-    // mesh.castShadow = true;
-    // mesh.receiveShadow = true;
-    this.mesh = mesh;
-
-    return this;
-  }
-
   async BuildAsync() {
     const mat = new MeshPhysicalMaterial({
-      color: 0x000000,
+      map: this.texture,
       wireframe: true,
     });
 
     const mesh = new Mesh(this.container, mat);
-
-    mesh.castShadow = true;
-    mesh.receiveShadow = true;
+    mat.dispose();
     this.mesh = mesh;
 
-    mat.dispose();
     return this;
   }
 }
