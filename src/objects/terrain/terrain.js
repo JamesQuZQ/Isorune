@@ -37,7 +37,7 @@ export class Terrain {
     max_height: 50,
   };
 
-  static TERRAIN_CHUNk_LIMIT = 51;
+  static TERRAIN_CHUNk_LIMIT = 30;
 
   /**
    * @param {Debugger} gui
