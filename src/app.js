@@ -1,29 +1,40 @@
-import { Bootstrap } from "./bootstrap";
-import { Loop } from "./loop";
-import { Noise } from "./noise";
-import { Sun } from "./sun";
+import { Bootstrap } from './bootstrap';
+import { Loop } from '@/logics/loop';
 
 export class App {
-  #textures;
   constructor() {
     this.config = new Bootstrap();
-    this.noise = new Noise().WithConfig(this.config.gui);
-    this.loop = new Loop(
-      this.config.camera,
-      this.config.scene,
-      this.config.renderer,
-      this.config.stats,
-    );
-    this.sun = new Sun();
+    this.loop = new Loop(this.camera, this.scene, this.renderer);
+  }
+
+  get scene() {
+    return this.config.scene;
+  }
+
+  get camera() {
+    return this.config.camera;
+  }
+
+  get renderer() {
+    return this.config.renderer;
   }
 
   Start() {
     this.loop.Start();
   }
 
-  Add(object) {
-    this.loop.Add(object);
-    this.config.scene.add(object.mesh);
+  AddObject(object) {
+    this.config.scene.add(object);
+  }
+
+  AddMesh(mesh) {
+    this.loop.Add(mesh);
+    this.config.scene.add(mesh.mesh);
+  }
+
+  async AddMeshAsync(mesh) {
+    this.loop.Add(mesh);
+    this.config.scene.add(mesh.mesh);
   }
 
   async AddAsync(object) {
@@ -33,5 +44,10 @@ export class App {
 
   Stop() {
     this.loop.Stop();
+  }
+
+  Render() {
+    this.renderer.render(this.scene, this.camera);
+    this.config.stats.update();
   }
 }

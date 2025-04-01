@@ -1,30 +1,20 @@
-import * as THREE from "three";
-import { OrbitControls } from "three/examples/jsm/Addons.js";
-import Stats from "three/examples/jsm/libs/stats.module.js";
-import { Config } from "./config";
+import * as THREE from 'three';
+import { OrbitControls } from 'three/examples/jsm/Addons.js';
+import Stats from 'three/examples/jsm/libs/stats.module.js';
+import { Debugger } from '@/debugger';
 
 export class Bootstrap {
-  renderer;
-  scene;
-  camera;
-  axesHelper;
-  stats;
-  control;
-  gui;
-
   constructor() {
     this.#Init();
     this.GetConfig();
   }
 
   #Init() {
-    this.textures = new Map([["grass", "something"]]);
-
     this.renderer = this.CreateRenderer();
 
     this.scene = new THREE.Scene();
     this.scene.rotateX(-Math.PI * 0.5);
-    this.scene.background = new THREE.Color("skyblue");
+    this.scene.background = new THREE.Color('#96c5fa');
 
     this.camera = this.CreateCamera();
     this.axesHelper = this.CreateAxesHelper();
@@ -33,21 +23,21 @@ export class Bootstrap {
 
     this.scene.add(this.axesHelper);
 
-    const config = new Config();
+    const config = new Debugger();
     this.gui = config.Init();
 
-    window.addEventListener("resize", this.OnWindowResize, false);
+    window.addEventListener('resize', this.#OnWindowResize, false);
   }
 
   CreateRenderer() {
-    const canvas = document.querySelector("#my_canvas");
+    const canvas = document.querySelector('#my_canvas');
     const renderer = new THREE.WebGLRenderer({ antialias: true, canvas });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.outputEncoding = THREE.sRGBEncoding;
     renderer.physicallyCorrectLights = true;
-    renderer.shadowMap.enabled = true;
-    renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+    // renderer.shadowMap.enabled = true;
+    // renderer.shadowMap.type = PCFSoftShadowMap;
     return renderer;
   }
 
@@ -82,7 +72,7 @@ export class Bootstrap {
     /* NOTE:
      * Only re-render when the control change gives us better performance
      * */
-    orbCtl.addEventListener("change", () => {
+    orbCtl.addEventListener('change', () => {
       this.renderer.render(this.scene, this.camera);
     });
 
@@ -92,12 +82,7 @@ export class Bootstrap {
     return orbCtl;
   }
 
-  Render() {
-    this.renderer.render(this.scene, this.camera);
-    this.stats.update();
-  }
-
-  OnWindowResize() {
+  #OnWindowResize() {
     // const canvas = this.renderer.domElement;
     const width = window.innerWidth;
     const height = window.innerHeight;
@@ -114,6 +99,6 @@ export class Bootstrap {
   }
 
   GetConfig() {
-    const appConfig = this.gui.addFolder("App Config");
+    const appConfig = this.gui.addFolder('App Config');
   }
 }
