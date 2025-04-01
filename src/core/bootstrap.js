@@ -1,32 +1,37 @@
 import * as THREE from 'three';
-import { OrbitControls } from 'three/examples/jsm/Addons.js';
+import { OrbitControls, PointerLockControls } from 'three/examples/jsm/Addons.js';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
-import { Debugger } from '@/tools/debugger';
+
+/** @import { Debugger } from '@/tools/debugger'*/
 
 /**
  * @property {THREE.Scene} scene
+ * @property {OrbitControls | PointerLockControls} control
+ * @property {THREE.Camera} camera
+ * @property {Debugger} debugger
+ * @property {THREE.AxesHelper} axesHelper
+ * @property {Stats} stats
  */
 export class Bootstrap {
-  constructor() {
+  /**
+   * @param {Debugger} debuggerCtl
+   * */
+  constructor(debuggerCtl) {
+    this.debugger = debuggerCtl;
     this.#Init();
-    this.GetConfig();
   }
 
   #Init() {
     this.renderer = this.CreateRenderer();
 
     this.scene = new THREE.Scene();
-    this.scene.rotateX(-Math.PI * 0.5);
     this.scene.background = new THREE.Color('#96c5fa');
 
     this.camera = this.CreateCamera();
     this.axesHelper = this.CreateAxesHelper();
     this.stats = this.CreateStat();
-    this.control = this.CreateControl(this.camera);
 
-    this.scene.add(this.axesHelper);
-
-    this.debugger = new Debugger();
+    this.control = this.CreateControl();
   }
 
   CreateRenderer() {
@@ -42,19 +47,27 @@ export class Bootstrap {
   }
 
   CreateCamera() {
-    // const camera = new THREE.PerspectiveCamera(
-    //   50,
-    //   window.innerWidth / window.innerHeight,
-    //   0.1,
-    //   1000,
-    // );
-    const camera = new THREE.OrthographicCamera(-50, 50, 50, -50, 0.1, 1000);
-    camera.position.set(30, 35, -10);
+    const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+    // const camera = new THREE.OrthographicCamera(-50, 50, 50, -50, 0.1, 1000);
+    // camera.position.set(60, 40, -40);
+    camera.position.set(0, 50, -50);
+
+    const cameraFolder = this.debugger.addFolder('Camera');
+
+    cameraFolder.add(camera.position, 'x', -100, 100);
+    cameraFolder.add(camera.position, 'y', -100, 100);
+    cameraFolder.add(camera.position, 'z', -100, 100);
+
+    cameraFolder.open();
+
+    camera.updateProjectionMatrix();
+
     return camera;
   }
 
   CreateAxesHelper() {
     const axesHelper = new THREE.AxesHelper(3);
+    this.scene.add(axesHelper);
 
     return axesHelper;
   }
@@ -62,7 +75,23 @@ export class Bootstrap {
   CreateStat() {
     const stats = Stats();
     document.body.appendChild(stats.dom);
+
     return stats;
+  }
+
+  CreatePointLockControl() {
+    const controls = new PointerLockControls(this.camera, this.renderer.domElement);
+
+    controls.addEventListener('change', () => {
+      console.log('pointerlock change');
+    });
+    // controls.addEventListener('lock', () => (menuPanel.style.display = 'none'));
+    // controls.addEventListener(
+    //   'unlock',
+    //   () => (menuPanel.style.display = 'block'),
+    // );
+
+    return controls;
   }
 
   CreateControl() {
@@ -75,7 +104,6 @@ export class Bootstrap {
     orbCtl.addEventListener('change', () => {
       this.renderer.render(this.scene, this.camera);
     });
-
     // orbCtl.dampingFactor = 0.07;
     // orbCtl.enableDamping = true;
 
@@ -97,7 +125,14 @@ export class Bootstrap {
     this.renderer.render(this.scene, this.camera);
   }
 
-  GetConfig() {
-    const appConfig = this.debugger.addFolder('App Config');
+  DisposeScene() {
+    this.scene.dispose();
+  }
+
+  DisposeRenderer() {
+    // disposing renderer
+    this.renderer.hideCanvas();
+    this.renderer.setAnimationLoop(null);
+    this.renderer.dispose();
   }
 }
