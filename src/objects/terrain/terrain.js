@@ -7,8 +7,7 @@ import sandTexture from '@/assets/textures/sand.jpg';
 import { Chunk } from '@/objects/terrain/chunk';
 import { LoaderHelper } from '@/utils/loader_helper';
 import { Noise } from '@/logics/noise';
-import { Vector2 } from 'three';
-import VectorHelper from '@/utils/vector_helper';
+import { Vector2 } from '@/utils/vector_helper';
 
 /**
  * @namespace Terrain
@@ -28,20 +27,21 @@ export class Terrain {
 
   /** @type {import('@/logics/noise').NoiseProps} noiseConfig*/
   noiseConfig = {
-    octaves: 1,
+    octaves: 4,
     scale: 250,
-    persistant: 0.2,
-    exponentiation: 7,
-    lacunarity: 1,
+    persistant: 4,
+    exponentiation: 3,
+    lacunarity: 3,
   };
 
   debugProp = {
     LOD: 3, // Level Of Detail
-    chunkSize: 100,
-    max_height: 50,
+    chunkSize: Terrain.TERRAIN_CHUNk_LIMIT,
+    max_height: Terrain.TERRAIN_CHUNk_HEIGHT,
   };
 
-  static TERRAIN_CHUNk_LIMIT = 30;
+  static TERRAIN_CHUNk_LIMIT = 20;
+  static TERRAIN_CHUNk_HEIGHT = 70;
 
   /**
    * @param {Debugger} gui
@@ -87,6 +87,7 @@ export class Terrain {
 
   async GetChunkBuilderAsync(edge, size, levelOfDetail) {
     const chunkBuilder = new Chunk(this.#textures, edge, size, this.envmap, levelOfDetail);
+
     return await chunkBuilder.CreateAsync(this.heightNoise, this.noiseConfig, this.debugProp.max_height);
   }
 
@@ -96,36 +97,38 @@ export class Terrain {
    * @param {Function} callback
    * */
   async AppendChunkAsync(edge, levelOfDetail = 2, callback) {
-    const chunkBuilder = await this.GetChunkBuilderAsync(edge, Terrain.TERRAIN_CHUNk_LIMIT, levelOfDetail);
+    const chunkBuilder = await this.GetChunkBuilderAsync(edge, this.debugProp.chunkSize, levelOfDetail);
     const chunk = await chunkBuilder.BuildAsync();
-    this.chunks.set(VectorHelper.Tokey2(chunk.edge), chunk);
+    this.chunks.set(chunk.coordinate.Tokey(), chunk);
 
     callback(chunk);
   }
 
   /**
-   * @param {Vector2} edge
+   * @param {Vector2} coordinate
    * @param {number} levelOfDetail
    * @param {Function} addToApp
-   * @param {Function} disposeChunk
+   * @param {Function} removeFromApp
    * */
-  async UpdateChunkAsync(edge, levelOfDetail = 2, addToApp, disposeChunk) {
-    this.DisposeChunk(this.chunks.get(VectorHelper.Tokey2(edge)), disposeChunk);
+  async UpdateChunkAsync(coordinate, levelOfDetail = 2, addToApp, removeFromApp) {
+    this.DisposeChunk(this.chunks.get(coordinate.Tokey()), removeFromApp);
 
-    const chunkBuilder = await this.GetChunkBuilderAsync(edge, Terrain.TERRAIN_CHUNk_LIMIT, levelOfDetail);
-    const chunk = await chunkBuilder.BuildAsync();
+    const chunkBuilder = await this.GetChunkBuilderAsync(coordinate, Terrain.TERRAIN_CHUNk_LIMIT, levelOfDetail);
+    const newChunk = await chunkBuilder.BuildAsync();
 
-    this.chunks.set(VectorHelper.Tokey2(chunk.edge), chunk);
-    addToApp(chunk);
+    this.chunks.set(newChunk.coordinate.Tokey(), newChunk);
+    addToApp(newChunk);
   }
 
-  async UpdateAsync(viewDistance, disposeChunk) {
-    this.chunks.foreach((/**@type {chunk} chunk */ chunk) => {
-      if (chunk.edge.x < -viewdistance || chunk.edge.x > viewdistance) {
-        chunk.group.visible = false;
-        // this.disposechunk(chunk, disposechunk);
-      }
-    });
+  /**
+   * @param {Chunk} chunk
+   * @param {Function} removeFromApp
+   * */
+  DisposeChunk(chunk, removeFromApp) {
+    chunk.Hide();
+    chunk.Dispose();
+    removeFromApp(chunk);
+    this.chunks.delete(chunk.coordinate.Tokey());
   }
 
   /**
@@ -153,15 +156,5 @@ export class Terrain {
     }
 
     this.chunks.clear();
-  }
-
-  /**
-   * @param {Chunk} chunk
-   * @param {Function} disposeChunk
-   * */
-  async DisposeChunk(chunk, disposeChunk) {
-    chunk.Dispose();
-    disposeChunk(chunk);
-    this.chunks.delete(VectorHelper.Tokey2(chunk.edge));
   }
 }

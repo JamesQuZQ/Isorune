@@ -10,7 +10,6 @@ import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js
  * */
 export class BlockTypeContainer {
   constructor(texture) {
-    this.vector_helper = new Vector3();
     this.container = new BoxGeometry(0, 0, 0);
     this.mat = new MeshPhysicalMaterial({
       map: texture,

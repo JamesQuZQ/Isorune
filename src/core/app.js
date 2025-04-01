@@ -100,7 +100,7 @@ export class App {
   /** Dispose Object in the scene
    * @param {Object3D} object
    * */
-  DisposeMesh(object) {
+  DisposeObject(object) {
     this.scene.remove(object);
     this.renderer.renderLists.dispose();
   }
