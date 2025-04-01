@@ -2,6 +2,8 @@
 
 ---
 
+![Isorune Icon](Isorune.png)
+
 ## TODO
 
 ## Contribute

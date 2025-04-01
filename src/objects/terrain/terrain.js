@@ -63,12 +63,17 @@ export class Terrain {
     const chunkFolder = gui.addFolder('Chunk Config');
 
     const update = () => {
-      this.DebugUpdate(this.GetLevelOfDetail(this.debugProp.LOD), this.debugProp.chunkSize);
+      this.DebugUpdate(
+        this.GetLevelOfDetail(this.debugProp.LOD),
+        this.debugProp.chunkSize,
+      );
     };
 
     chunkFolder.add(this.noiseConfig, 'octaves', 1, 5, 1).onChange(update);
     chunkFolder.add(this.noiseConfig, 'scale', 20, 100, 2).onChange(update);
-    chunkFolder.add(this.noiseConfig, 'persistant', 0.1, 1, 0.1).onChange(update);
+    chunkFolder
+      .add(this.noiseConfig, 'persistant', 0.1, 1, 0.1)
+      .onChange(update);
     chunkFolder.add(this.noiseConfig, 'lacunarity', 1, 10).onChange(update);
     chunkFolder.add(this.noiseConfig, 'exponentiation', 1, 7).onChange(update);
     chunkFolder.add(this.debugProp, 'LOD', 0, 4, 1).onChange(update);
@@ -78,7 +83,8 @@ export class Terrain {
 
   async InitTextureAsync() {
     this.#textures['grass'] = await LoaderHelper.LoadTextureAsync(grassTexture);
-    this.#textures['mountantRock'] = await LoaderHelper.LoadTextureAsync(mountantRockTexture);
+    this.#textures['mountantRock'] =
+      await LoaderHelper.LoadTextureAsync(mountantRockTexture);
     this.#textures['snow'] = await LoaderHelper.LoadTextureAsync(snowTexture);
     this.#textures['rock'] = await LoaderHelper.LoadTextureAsync(rockTexture);
     this.#textures['soil'] = await LoaderHelper.LoadTextureAsync(soilTexture);
@@ -86,9 +92,19 @@ export class Terrain {
   }
 
   async GetChunkBuilderAsync(edge, size, levelOfDetail) {
-    const chunkBuilder = new Chunk(this.#textures, edge, size, this.envmap, levelOfDetail);
+    const chunkBuilder = new Chunk(
+      this.#textures,
+      edge,
+      size,
+      this.envmap,
+      levelOfDetail,
+    );
 
-    return await chunkBuilder.CreateAsync(this.heightNoise, this.noiseConfig, this.debugProp.max_height);
+    return await chunkBuilder.CreateAsync(
+      this.heightNoise,
+      this.noiseConfig,
+      this.debugProp.max_height,
+    );
   }
 
   /**
@@ -97,7 +113,11 @@ export class Terrain {
    * @param {Function} callback
    * */
   async AppendChunkAsync(edge, levelOfDetail = 2, callback) {
-    const chunkBuilder = await this.GetChunkBuilderAsync(edge, this.debugProp.chunkSize, levelOfDetail);
+    const chunkBuilder = await this.GetChunkBuilderAsync(
+      edge,
+      this.debugProp.chunkSize,
+      levelOfDetail,
+    );
     const chunk = await chunkBuilder.BuildAsync();
     this.chunks.set(chunk.coordinate.Tokey(), chunk);
 
@@ -110,10 +130,19 @@ export class Terrain {
    * @param {Function} addToApp
    * @param {Function} removeFromApp
    * */
-  async UpdateChunkAsync(coordinate, levelOfDetail = 2, addToApp, removeFromApp) {
+  async UpdateChunkAsync(
+    coordinate,
+    levelOfDetail = 2,
+    addToApp,
+    removeFromApp,
+  ) {
     this.DisposeChunk(this.chunks.get(coordinate.Tokey()), removeFromApp);
 
-    const chunkBuilder = await this.GetChunkBuilderAsync(coordinate, Terrain.TERRAIN_CHUNk_LIMIT, levelOfDetail);
+    const chunkBuilder = await this.GetChunkBuilderAsync(
+      coordinate,
+      Terrain.TERRAIN_CHUNk_LIMIT,
+      levelOfDetail,
+    );
     const newChunk = await chunkBuilder.BuildAsync();
 
     this.chunks.set(newChunk.coordinate.Tokey(), newChunk);

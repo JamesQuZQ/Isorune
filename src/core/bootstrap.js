@@ -1,5 +1,8 @@
 import * as THREE from 'three';
-import { OrbitControls, PointerLockControls } from 'three/examples/jsm/Addons.js';
+import {
+  OrbitControls,
+  PointerLockControls,
+} from 'three/examples/jsm/Addons.js';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
 
 /** @import { Debugger } from '@/tools/debugger'*/
@@ -47,7 +50,12 @@ export class Bootstrap {
   }
 
   CreateCamera() {
-    const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const camera = new THREE.PerspectiveCamera(
+      50,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      1000,
+    );
     // const camera = new THREE.OrthographicCamera(-50, 50, 50, -50, 0.1, 1000);
     // camera.position.set(60, 40, -40);
     camera.position.set(0, 50, -50);
@@ -80,7 +88,10 @@ export class Bootstrap {
   }
 
   CreatePointLockControl() {
-    const controls = new PointerLockControls(this.camera, this.renderer.domElement);
+    const controls = new PointerLockControls(
+      this.camera,
+      this.renderer.domElement,
+    );
 
     controls.addEventListener('change', () => {
       console.log('pointerlock change');

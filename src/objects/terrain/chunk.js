@@ -53,8 +53,16 @@ export class Chunk {
    * @param {number} max_height
    * */
   async CreateAsync(noise, noiseProps, max_height) {
-    for (let y = this.coordinate.y * this.size; y < this.coordinate.y * this.size + this.size; y += this.LOD) {
-      for (let x = this.coordinate.x * this.size; x < this.coordinate.x * this.size + this.size; x += this.LOD) {
+    for (
+      let y = this.coordinate.y * this.size;
+      y < this.coordinate.y * this.size + this.size;
+      y += this.LOD
+    ) {
+      for (
+        let x = this.coordinate.x * this.size;
+        x < this.coordinate.x * this.size + this.size;
+        x += this.LOD
+      ) {
         const height = Math.floor(noise.Get2D(x, y, noiseProps) * max_height);
         for (let z = 0; z <= height; z++) {
           const block_geo = new BoxGeometry(1 * this.LOD, 1, 1 * this.LOD);
@@ -62,11 +70,16 @@ export class Chunk {
           block_geo.translate(x + this.LOD * 0.5, z * 0.5, y + this.LOD * 0.5);
 
           if (Chunk.SNOW_HEIGHT < height) this.blockTypes.snow.Merge(block_geo);
-          else if (Chunk.MOUNTANTROCk_HEIGHT < height) this.blockTypes.rock.Merge(block_geo);
-          else if (Chunk.STONE_HEIGHT < height) this.blockTypes.stone.Merge(block_geo);
-          else if (Chunk.GRASS_HEIGHT < height) this.blockTypes.grass.Merge(block_geo);
-          else if (Chunk.SAND_HEIGHT < height) this.blockTypes.sand.Merge(block_geo);
-          else if (Chunk.SOIL_HEIGHT <= height) this.blockTypes.soil.Merge(block_geo);
+          else if (Chunk.MOUNTANTROCk_HEIGHT < height)
+            this.blockTypes.rock.Merge(block_geo);
+          else if (Chunk.STONE_HEIGHT < height)
+            this.blockTypes.stone.Merge(block_geo);
+          else if (Chunk.GRASS_HEIGHT < height)
+            this.blockTypes.grass.Merge(block_geo);
+          else if (Chunk.SAND_HEIGHT < height)
+            this.blockTypes.sand.Merge(block_geo);
+          else if (Chunk.SOIL_HEIGHT <= height)
+            this.blockTypes.soil.Merge(block_geo);
 
           block_geo.dispose();
         }
@@ -92,7 +105,10 @@ export class Chunk {
    * @returns {boolean}
    * */
   IsInBounding(vector3) {
-    return !(vector3.x < this.coordinate.x * this.size + this.size && this.coordinate.x * this.size > vector3.x);
+    return !(
+      vector3.x < this.coordinate.x * this.size + this.size &&
+      this.coordinate.x * this.size > vector3.x
+    );
   }
 
   Dispose() {
