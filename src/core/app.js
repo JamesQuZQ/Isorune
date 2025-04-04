@@ -4,7 +4,8 @@ import { ControlService } from '@/logics/control';
 import { Character } from '@/objects/character/character';
 import { Terrain } from '@/objects/terrain/terrain';
 import { Debugger } from '@/tools/debugger';
-import { AmbientLight, Vector2 } from 'three';
+import { AmbientLight, MeshBasicMaterial, PlaneGeometry, Mesh } from 'three';
+import { Vector2 } from '@/utils/vector_helper';
 
 /** @import { Scene, WebGLRenderer, Camera, Mesh, Object3D  } from 'three'; */
 /** @import { Bootstrap } from '@/core/bootstrap'; */
@@ -68,33 +69,44 @@ export class App {
     this.loop.Start(this.Render);
 
     const terrain = new Terrain(this.debugger);
-    await terrain.InitTextureAsync();
+    console.time('create chunk');
+    await terrain.AppendChunkAsync(new Vector2(0, 0), 2);
+    await terrain.AppendChunkAsync(new Vector2(1, 0), 2);
+    await terrain.AppendChunkAsync(new Vector2(0, 1), 2);
+    await terrain.AppendChunkAsync(new Vector2(0, -1), 2);
+    await terrain.AppendChunkAsync(new Vector2(-1, 0), 2);
+    await terrain.AppendChunkAsync(new Vector2(1, -1), 2);
+    await terrain.AppendChunkAsync(new Vector2(-1, 1), 2);
+    await terrain.AppendChunkAsync(new Vector2(-1, -1), 2);
+    await terrain.AppendChunkAsync(new Vector2(1, 1), 2);
 
-    const character = new Character(new Vector2(5, 5));
-    await this.AddMeshAsync(character);
+    terrain.RenderChunks((object) => {
+      this.AddObject(object);
+    });
 
-    const controlSrv = new ControlService(terrain, character, this);
-    this.loop.Add(controlSrv);
+    console.timeEnd('create chunk');
+
+    console.time('render chunk');
+
+    terrain.RenderChunks((object) => {
+      this.AddObject(object);
+    });
+
+    console.timeEnd('render chunk');
+
+    const character = new Character(new Vector2(10, 10));
+    this.AddObject(character.mesh);
+
+    // const controlSrv = new ControlService(terrain, character, this);
+    // this.AddToLoop(controlSrv);
+  }
+
+  AddToLoop(object) {
+    this.loop.Add(object);
   }
 
   AddObject(object) {
     this.scene.add(object);
-  }
-
-  AddMesh(object) {
-    this.scene.add(object.mesh);
-  }
-
-  async AddMeshAsync(object) {
-    this.loop.Add(object);
-    this.scene.add(object.mesh);
-    this.entities.push(object);
-  }
-
-  async AddAsync(object) {
-    this.loop.Add(object);
-    this.scene.add(object);
-    this.entities.push(object);
   }
 
   /** Dispose Object in the scene

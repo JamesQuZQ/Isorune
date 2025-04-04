@@ -33,10 +33,9 @@ export class Loop {
    * */
   Start() {
     this.renderer.setAnimationLoop(async () => {
-      await this.Tick();
+      this.Tick();
       this.PreRender();
       this.renderer.render(this.scene, this.camera);
-      this.stats.update();
       this.PostRender();
     });
   }
@@ -45,20 +44,21 @@ export class Loop {
     this.renderer.setAnimationLoop(null);
   }
 
-  async Tick() {
+  Tick() {
     if (!this.#updateables) return;
 
     const delta = this.clock.getDelta();
 
-    this.#updateables.forEach(async (o) => {
-      if (o.Tick) await o.Tick(delta);
+    this.#updateables.forEach((o) => {
+      if (o.Tick) o.Tick(delta);
     });
   }
 
   PreRender() {}
 
   PostRender() {
-    // console.log(this.renderer.info.render.calls);
+    this.stats.update();
+    //console.log(this.renderer.info.render.calls);
     this.renderer.info.reset();
   }
 

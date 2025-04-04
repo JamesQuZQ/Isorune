@@ -1,4 +1,10 @@
-import { Mesh, MeshPhysicalMaterial, Vector3, BoxGeometry } from 'three';
+import {
+  Mesh,
+  MeshPhysicalMaterial,
+  Vector3,
+  BoxGeometry,
+  InstancedMesh,
+} from 'three';
 import { mergeGeometries } from 'three/examples/jsm/utils/BufferGeometryUtils.js';
 
 /** @import { BoxGeometry , BufferGeometry} from 'three'*/
@@ -31,7 +37,7 @@ export class BlockTypeContainer {
    * @returns {BlockTypeContainer}
    * */
   async BuildAsync() {
-    const mesh = new Mesh(this.container, this.mat);
+    const mesh = new InstancedMesh(this.container, this.mat, 1);
     this.mesh = mesh;
 
     return this;
