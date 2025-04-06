@@ -141,8 +141,7 @@ export class ControlService {
             console.log('moved out of the center chunk');
           }
         } else {
-          console.log(this.viewedChunkCoordinate);
-          await this.terrain.AppendChunkAsync(this.viewedChunkCoordinate, 3);
+          await this.terrain.AppendChunkAsync(this.viewedChunkCoordinate, 4);
         }
       }
     }
@@ -158,6 +157,7 @@ export class ControlService {
    * */
   UpdateTerrainOnCharacterPosition() {
     if (!this.terrain.chunks) return;
+
     for (const chunk of this.terrain.chunks.values()) {
       if (this.viewable.has(chunk.coordinate.Tokey())) {
         if (

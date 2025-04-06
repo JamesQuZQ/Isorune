@@ -8,6 +8,7 @@ import {
   Vector3,
 } from 'three';
 import { BlockTypeContainer } from '@/objects/terrain/container';
+import Voxel from './voxel';
 
 /** @import { Noise } from '@/logics/noise'*/
 /** @import Terrain from '@/objects/terrain/terrain'*/
@@ -38,12 +39,14 @@ export class Chunk {
   constructor(coordinate, size, levelOfDetail, height) {
     this.coordinate = new Vector2().copy(coordinate);
     this.size = size;
-    this.maxEdge = new Vector2(
-      coordinate.x * size + size,
-      coordinate.y * size + size,
-    );
+    this.edge = {
+      maxEdge: new Vector2(
+        coordinate.x * size + size,
+        coordinate.y * size + size,
+      ),
+      minEdge: new Vector2(coordinate.x * size, coordinate.y * size),
+    };
 
-    this.minEdge = new Vector2(coordinate.x * size, coordinate.y * size);
     this.LOD = levelOfDetail;
     this.height = height;
   }
@@ -54,12 +57,16 @@ export class Chunk {
    * @param {Map} blocks
    * */
   async GenerateAsync(noise, noiseProps, blocks) {
-    for (let y = this.minEdge.y; y < this.maxEdge.y; y += this.LOD) {
-      for (let x = this.minEdge.x; x < this.maxEdge.x; x += this.LOD) {
+    for (let y = this.edge.minEdge.y; y < this.edge.maxEdge.y; y += this.LOD) {
+      for (
+        let x = this.edge.minEdge.x;
+        x < this.edge.maxEdge.x;
+        x += this.LOD
+      ) {
         const blockHeight = Math.floor(
           noise.Get2D(x, y, noiseProps) * this.height,
         );
-
+        // const blockHeight = this.size;
         for (let z = 0; z <= blockHeight; z += this.LOD) {
           blocks.set(`${x},${z},${y}`);
         }
@@ -73,55 +80,35 @@ export class Chunk {
     const size = this.LOD;
     const half = size * 0.5;
 
-    const geoRight = new PlaneGeometry(size, size);
-    geoRight.rotateY(Math.PI / 2);
-    geoRight.translate(size, half, half);
+    const voxel = new Voxel(size, half);
 
-    const geoLeft = new PlaneGeometry(size, size);
-    geoLeft.rotateY(-Math.PI / 2);
-    geoLeft.translate(0, half, half);
-
-    const geoFront = new PlaneGeometry(size, size);
-    geoFront.rotateX(-Math.PI / 2);
-    geoFront.translate(half, size, half);
-
-    const geoTop = new PlaneGeometry(size, size);
-    geoTop.translate(half, half, size);
-
-    const geoBottom = new PlaneGeometry(size, size);
-    geoBottom.translate(half, half, 0);
-
-    const matLeft = new MeshBasicMaterial({
+    const mat = new MeshBasicMaterial({
       color: 0x000000,
       wireframe: true,
     });
-    const matRight = new MeshBasicMaterial({
-      color: 0xfff000,
-      wireframe: true,
-    });
-    const matFront = new MeshBasicMaterial({
-      color: 0xffff00,
-      wireframe: true,
-    });
-    const matTop = new MeshBasicMaterial({ color: 0xf0ff0f, wireframe: true });
 
+    const matest = new MeshBasicMaterial({
+      color: 0x0000ff,
+      wireframe: true,
+    });
     const count = blocks.size;
 
-    const top = new InstancedMesh(geoTop, matTop, count);
-    const bottom = new InstancedMesh(geoBottom, matLeft, count);
-    const front = new InstancedMesh(geoFront, matFront, count);
-    const right = new InstancedMesh(geoLeft, matRight, count);
-    const left = new InstancedMesh(geoRight, matLeft, count);
+    const top = new InstancedMesh(voxel.top, mat, count);
+    const bottom = new InstancedMesh(voxel.bottom, mat, count);
+    const front = new InstancedMesh(voxel.front, mat, count);
+    const right = new InstancedMesh(voxel.right, mat, count);
+    const left = new InstancedMesh(voxel.left, mat, count);
 
     const pos = new Matrix4();
+
     let ndxFront = 0,
       ndxTop = 0,
       ndxBottom = 0,
       ndxLeft = 0,
       ndxRight = 0;
 
-    for (let y = this.minEdge.y; y < this.maxEdge.y; y += size) {
-      for (let x = this.minEdge.x; x < this.maxEdge.x; x += size) {
+    for (let y = this.edge.minEdge.y; y < this.edge.maxEdge.y; y += size) {
+      for (let x = this.edge.minEdge.x; x < this.edge.maxEdge.x; x += size) {
         for (let z = 0; z <= this.height; z += size) {
           const key = `${x},${z},${y}`;
           if (!blocks.has(key)) continue;
@@ -130,7 +117,6 @@ export class Chunk {
           const cy = z;
           const cz = y;
 
-          // Check each side for visibility (air block)
           if (!blocks.has(`${x + size},${z},${y}`)) {
             pos.makeTranslation(cx, cy, cz);
             left.setMatrixAt(ndxRight++, pos);

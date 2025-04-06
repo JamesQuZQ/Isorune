@@ -28,11 +28,11 @@ export class Terrain {
 
   /** @type {import('@/logics/noise').NoiseProps} noiseConfig*/
   noiseConfig = {
-    octaves: 3,
-    scale: 150,
-    persistant: 2,
-    exponentiation: 3,
-    lacunarity: 3,
+    octaves: 7,
+    scale: 100,
+    persistant: 1,
+    exponentiation: 6,
+    lacunarity: 2,
   };
 
   debugProp = {
@@ -77,58 +77,18 @@ export class Terrain {
     chunkFolder.add(this.debugProp, 'max_height', 10, 100, 10).onChange(update);
   }
 
-  async InitTextureAsync() {
-    this.#textures.set(
-      'grass',
-      await LoaderHelper.LoadTextureAsync(grassTexture),
-    );
-    this.#textures.set(
-      'mountantRock',
-      await LoaderHelper.LoadTextureAsync(mountantRockTexture),
-    );
-    this.#textures.set(
-      'snow',
-      await LoaderHelper.LoadTextureAsync(snowTexture),
-    );
-    this.#textures.set(
-      'rock',
-      await LoaderHelper.LoadTextureAsync(rockTexture),
-    );
-    this.#textures.set(
-      'soil',
-      await LoaderHelper.LoadTextureAsync(soilTexture),
-    );
-    this.#textures.set(
-      'sand',
-      await LoaderHelper.LoadTextureAsync(sandTexture),
-    );
-  }
-
-  async GetChunkBuilderAsync(coordinate, size, levelOfDetail) {
-    const chunkBuilder = new Chunk(
-      coordinate,
-      size,
-      levelOfDetail,
-      this.debugProp.max_height,
-    );
-
-    return await chunkBuilder.GenerateAsync(
-      this.heightNoise,
-      this.noiseConfig,
-      this.blocks,
-    );
-  }
-
   /**
    * @param {Vector2} coordinate
    * @param {number} levelOfDetail
    * */
   async AppendChunkAsync(coordinate, levelOfDetail) {
-    const chunk = await this.GetChunkBuilderAsync(
+    const chunk = await new Chunk(
       coordinate,
       this.debugProp.chunkSize,
       levelOfDetail,
-    );
+      this.debugProp.max_height,
+    ).GenerateAsync(this.heightNoise, this.noiseConfig, this.blocks);
+
     this.chunks.set(chunk.coordinate.Tokey(), chunk);
     this.rendered = false;
   }

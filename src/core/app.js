@@ -69,32 +69,18 @@ export class App {
     this.loop.Start(this.Render);
 
     const terrain = new Terrain(this.debugger);
-    console.time('create chunk');
-    await terrain.AppendChunkAsync(new Vector2(0, 0), 2);
-    await terrain.AppendChunkAsync(new Vector2(1, 0), 2);
-    await terrain.AppendChunkAsync(new Vector2(0, 1), 2);
-    await terrain.AppendChunkAsync(new Vector2(0, -1), 2);
-    await terrain.AppendChunkAsync(new Vector2(-1, 0), 2);
-    await terrain.AppendChunkAsync(new Vector2(1, -1), 2);
-    await terrain.AppendChunkAsync(new Vector2(-1, 1), 2);
-    await terrain.AppendChunkAsync(new Vector2(-1, -1), 2);
-    await terrain.AppendChunkAsync(new Vector2(1, 1), 2);
+
+    for (let i = -1; i <= 1; i++) {
+      for (let j = -1; j <= 1; j++) {
+        await terrain.AppendChunkAsync(new Vector2(i, j), 2);
+      }
+    }
 
     terrain.RenderChunks((object) => {
       this.AddObject(object);
     });
 
-    console.timeEnd('create chunk');
-
-    console.time('render chunk');
-
-    terrain.RenderChunks((object) => {
-      this.AddObject(object);
-    });
-
-    console.timeEnd('render chunk');
-
-    const character = new Character(new Vector2(10, 10));
+    const character = new Character(new Vector2(75, 75));
     this.AddObject(character.mesh);
 
     // const controlSrv = new ControlService(terrain, character, this);
