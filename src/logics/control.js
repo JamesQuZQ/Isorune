@@ -5,12 +5,8 @@ import { Chunk } from '@/objects/terrain/chunk';
 /**@import { App } from '@/core/app';*/
 /** @import { Character } from '@/objects/character/character';*/
 
-/**
- * @property {Terrain} terrain - paramDescription
- * @property {Character} character - paramDescription
- * */
-export class ControlService {
-  static DISPOSE_CHUNk_THRESHOLD = 400;
+export default class ControlService {
+  static DISPOSE_CHUNk_THRESHOLD = Terrain.TERRAIN_CHUNk_LIMIT * 5;
   static VIEW_DISTANCE = 1;
   /**
    * @param {Terrain} terrain - paramDescription
@@ -39,6 +35,8 @@ export class ControlService {
     this.viewPoolSize = 12;
 
     this.lastChunkCoordinate = new Vector2(0, 0);
+
+    this.vec2Pool = new Vector2();
   }
 
   get characterPosition2() {
@@ -111,7 +109,6 @@ export class ControlService {
   }
 
   async CreateTerrainChunkOnCharacterPosition() {
-    const vec2 = new Vector2();
     for (
       let x = -ControlService.VIEW_DISTANCE;
       x <= ControlService.VIEW_DISTANCE;
@@ -124,7 +121,7 @@ export class ControlService {
       ) {
         const xOff = x + this.currentChunkXCharOn;
         const yOff = z + this.currentChunkYCharOn;
-        this.viewable.add(vec2.set(xOff, yOff).Tokey());
+        this.viewable.add(this.vec2Pool.set(xOff, yOff).Tokey());
         this.viewedChunkCoordinate.set(xOff, yOff);
 
         /** @type {Chunk} chunk*/
@@ -139,14 +136,13 @@ export class ControlService {
             chunk.coordinate.Tokey() != this.lastChunkCoordinate.Tokey()
           ) {
             console.log('moved out of the center chunk');
+            this.terrain.RenderChunks(this.addChunkToApp);
           }
         } else {
           await this.terrain.AppendChunkAsync(this.viewedChunkCoordinate, 4);
         }
       }
     }
-
-    this.terrain.RenderChunks(this.addChunkToApp);
   }
 
   /**
@@ -157,20 +153,20 @@ export class ControlService {
    * */
   UpdateTerrainOnCharacterPosition() {
     if (!this.terrain.chunks) return;
-
-    for (const chunk of this.terrain.chunks.values()) {
-      if (this.viewable.has(chunk.coordinate.Tokey())) {
-        if (
-          this.characterPosition2.distanceTo(chunk.edge) >=
-          ControlService.DISPOSE_CHUNk_THRESHOLD
-        ) {
-          // this.terrain.DisposeChunk(chunk, this.removeChunkFromApp);
-        } else {
-          chunk.Hide();
-        }
-      }
-
-      this.viewable.delete(chunk.coordinate.Tokey());
-    }
+    // for (const chunk of this.terrain.chunks.values()) {
+    //   console.log(this.terrain.chunks);
+    //   if (this.viewable.has(chunk.coordinate.Tokey())) {
+    //     if (
+    //       this.characterPosition2.distanceTo(chunk.edge) >=
+    //       ControlService.DISPOSE_CHUNk_THRESHOLD
+    //     ) {
+    //       // this.terrain.DisposeChunk(chunk, this.removeChunkFromApp);
+    //     } else {
+    //       chunk.Hide();
+    //     }
+    //   }
+    //
+    //   this.viewable.delete(chunk.coordinate.Tokey());
+    // }
   }
 }

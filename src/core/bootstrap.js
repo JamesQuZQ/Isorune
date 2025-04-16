@@ -1,9 +1,11 @@
+import { LoaderHelper } from '@/utils/loader_helper';
 import * as THREE from 'three';
 import {
   OrbitControls,
   PointerLockControls,
 } from 'three/examples/jsm/Addons.js';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
+import texturesprite from '@/assets/spritesheet_tiles.png';
 
 /** @import { Debugger } from '@/tools/debugger'*/
 
@@ -22,6 +24,7 @@ export class Bootstrap {
   constructor(debuggerCtl) {
     this.debugger = debuggerCtl;
     this.#Init();
+    this.InitTexture();
   }
 
   #Init() {
@@ -104,7 +107,7 @@ export class Bootstrap {
 
     return controls;
   }
-
+  noiseProps;
   CreateControl() {
     const orbCtl = new OrbitControls(this.camera, this.renderer.domElement);
     orbCtl.update();
@@ -119,6 +122,17 @@ export class Bootstrap {
     // orbCtl.enableDamping = true;
 
     return orbCtl;
+  }
+
+  InitTexture() {
+    const texture = LoaderHelper.LoadTexture(texturesprite);
+    texture.magFilter = THREE.NearestFilter;
+    texture.minFilter = THREE.NearestFilter;
+
+    texture.wrapS = THREE.ClampToEdgeWrapping;
+    texture.wrapT = THREE.ClampToEdgeWrapping;
+
+    this.texture = texture;
   }
 
   OnWindowResize() {

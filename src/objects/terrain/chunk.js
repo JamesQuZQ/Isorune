@@ -1,18 +1,9 @@
-import {
-  BoxGeometry,
-  InstancedMesh,
-  Matrix4,
-  MeshBasicMaterial,
-  PlaneGeometry,
-  Vector2,
-  Vector3,
-} from 'three';
-import { BlockTypeContainer } from '@/objects/terrain/container';
-import Voxel from './voxel';
-
-/** @import { Noise } from '@/logics/noise'*/
-/** @import Terrain from '@/objects/terrain/terrain'*/
-/** @import { Vector2 } from 'three'*/
+import { Matrix4, Vector2 } from 'three';
+import Voxel, { VoxelType } from '@/objects/voxel';
+import MeshFaces from '@/objects/mesh_type/mesh_faces';
+import WaterMesh from '../mesh_type/water_mesh';
+import texture from '@/game_config/texture';
+import ThreeHelper from '@/utils/three_helper';
 
 /**
  * @property {GeoContainer[]} blockTypes
@@ -22,14 +13,6 @@ import Voxel from './voxel';
  *
  * */
 export class Chunk {
-  static SNOW_HEIGHT = 40;
-  static MOUNTANTROCk_HEIGHT = 27;
-  static STONE_HEIGHT = 10;
-  static GRASS_HEIGHT = 3;
-  static SAND_HEIGHT = 0.4;
-  static SOIL_HEIGHT = 0;
-  static RIVER_HEIGHT = 0.2;
-
   /**
    * @param {Vector2} coordinate
    * @param {number} size
@@ -49,115 +32,114 @@ export class Chunk {
 
     this.LOD = levelOfDetail;
     this.height = height;
+    this.containsVoxelType = new Set();
+    this.meshFaces = new Array(36);
+  }
+
+  InitMeshFaces(count, voxelSize, material) {
+    const { tileSize, atlasWidth, atlasHeight, grass, water, dirt } = texture;
+    const grass_voxel = new Voxel(voxelSize, VoxelType.GRASS);
+    grass_voxel.SetUVCoordinate(
+      ['top'],
+      ThreeHelper.GetUVFromSubTexture(
+        grass.top,
+        tileSize,
+        atlasWidth,
+        atlasHeight,
+      ),
+    );
+
+    grass_voxel.SetUVCoordinate(
+      ['back', 'front', 'right', 'left'],
+      ThreeHelper.GetUVFromSubTexture(
+        grass.side,
+        tileSize,
+        atlasWidth,
+        atlasHeight,
+      ),
+    );
+    const water_voxel = new Voxel(voxelSize, VoxelType.WATER);
+
+    water_voxel.SetUVCoordinate(
+      ['top', 'back', 'front', 'right', 'left'],
+      ThreeHelper.GetUVFromSubTexture(water, tileSize, atlasWidth, atlasHeight),
+    );
+
+    const dirt_voxel = new Voxel(voxelSize, VoxelType.SOIL);
+
+    dirt_voxel.SetUVCoordinate(
+      ['top', 'back', 'front', 'right', 'left'],
+      ThreeHelper.GetUVFromSubTexture(dirt, tileSize, atlasWidth, atlasHeight),
+    );
+
+    if (this.containsVoxelType.has(VoxelType.GRASS)) {
+      this.meshFaces[VoxelType.GRASS] = new MeshFaces(
+        grass_voxel,
+        count,
+        material,
+      );
+    }
+
+    if (this.containsVoxelType.has(VoxelType.WATER)) {
+      this.meshFaces[VoxelType.WATER] = new WaterMesh(
+        water_voxel,
+        count,
+        material,
+      );
+    }
+
+    if (this.containsVoxelType.has(VoxelType.SOIL)) {
+      this.meshFaces[VoxelType.SOIL] = new MeshFaces(
+        dirt_voxel,
+        count,
+        material,
+      );
+    }
   }
 
   /**
-   * @param {Noise} noise - The Noise seed
-   * @param {NoiseConfig} noiseProps
-   * @param {Map} blocks
+   * @param {*} blocks
+   * @param {*} material
+   * @param {*} pos
    * */
-  async GenerateAsync(noise, noiseProps, blocks) {
-    for (let y = this.edge.minEdge.y; y < this.edge.maxEdge.y; y += this.LOD) {
+  Create(blocks, material, pos) {
+    const voxelSize = this.LOD;
+
+    const buildMeshFaces = (x, y, z, voxelType) => {};
+
+    this.InitMeshFaces(blocks.size, voxelSize, material);
+
+    //NOTE: We don't have to render the faces that is at the edge of the chunk
+
+    for (let y = this.edge.minEdge.y; y < this.edge.maxEdge.y; y += voxelSize) {
       for (
         let x = this.edge.minEdge.x;
         x < this.edge.maxEdge.x;
-        x += this.LOD
+        x += voxelSize
       ) {
-        const blockHeight = Math.floor(
-          noise.Get2D(x, y, noiseProps) * this.height,
-        );
-        // const blockHeight = this.size;
-        for (let z = 0; z <= blockHeight; z += this.LOD) {
-          blocks.set(`${x},${z},${y}`);
-        }
-      }
-    }
-
-    return this;
-  }
-
-  Create(blocks) {
-    const size = this.LOD;
-    const half = size * 0.5;
-
-    const voxel = new Voxel(size, half);
-
-    const mat = new MeshBasicMaterial({
-      color: 0x000000,
-      wireframe: true,
-    });
-
-    const matest = new MeshBasicMaterial({
-      color: 0x0000ff,
-      wireframe: true,
-    });
-    const count = blocks.size;
-
-    const top = new InstancedMesh(voxel.top, mat, count);
-    const bottom = new InstancedMesh(voxel.bottom, mat, count);
-    const front = new InstancedMesh(voxel.front, mat, count);
-    const right = new InstancedMesh(voxel.right, mat, count);
-    const left = new InstancedMesh(voxel.left, mat, count);
-
-    const pos = new Matrix4();
-
-    let ndxFront = 0,
-      ndxTop = 0,
-      ndxBottom = 0,
-      ndxLeft = 0,
-      ndxRight = 0;
-
-    for (let y = this.edge.minEdge.y; y < this.edge.maxEdge.y; y += size) {
-      for (let x = this.edge.minEdge.x; x < this.edge.maxEdge.x; x += size) {
-        for (let z = 0; z <= this.height; z += size) {
+        for (let z = 0; z <= this.height; z += voxelSize) {
           const key = `${x},${z},${y}`;
           if (!blocks.has(key)) continue;
-
-          const cx = x;
-          const cy = z;
-          const cz = y;
-
-          if (!blocks.has(`${x + size},${z},${y}`)) {
-            pos.makeTranslation(cx, cy, cz);
-            left.setMatrixAt(ndxRight++, pos);
-          }
-
-          if (!blocks.has(`${x - size},${z},${y}`)) {
-            pos.makeTranslation(cx, cy, cz);
-            right.setMatrixAt(ndxLeft++, pos);
-          }
-
-          if (!blocks.has(`${x},${z + size},${y}`)) {
-            pos.makeTranslation(cx, cy, cz);
-            front.setMatrixAt(ndxTop++, pos);
-          }
-
-          if (!blocks.has(`${x},${z},${y + size}`)) {
-            pos.makeTranslation(cx, cy, cz);
-            top.setMatrixAt(ndxFront++, pos);
-          }
-
-          if (!blocks.has(`${x},${z},${y - size}`)) {
-            pos.makeTranslation(cx, cy, cz);
-            bottom.setMatrixAt(ndxBottom++, pos);
-          }
+          this.meshFaces[blocks.get(key).type].BuildMeshFaces(
+            x,
+            y,
+            z,
+            blocks,
+            voxelSize,
+            pos,
+          );
         }
       }
     }
 
-    top.count = ndxFront;
-    front.count = ndxTop;
-    bottom.count = ndxBottom;
-    right.count = ndxLeft;
-    left.count = ndxRight;
-
-    top.instanceMatrix.needsUpdate = true;
-    bottom.instanceMatrix.needsUpdate = true;
-    front.instanceMatrix.needsUpdate = true;
-    right.instanceMatrix.needsUpdate = true;
-    left.instanceMatrix.needsUpdate = true;
-
-    this.meshes = [top, bottom, front, right, left];
+    this.meshFaces = this.meshFaces.filter((x) => x != null);
+    this.meshes = this.meshFaces.flatMap((mf) => [
+      mf.front,
+      mf.top,
+      mf.back,
+      mf.right,
+      mf.left,
+    ]);
   }
 
   /**

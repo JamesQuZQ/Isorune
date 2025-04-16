@@ -1,11 +1,17 @@
 import { Bootstrap } from '@/core/bootstrap';
 import { Loop } from '@/core/loop';
-import { ControlService } from '@/logics/control';
+import ControlService from '@/logics/control';
 import { Character } from '@/objects/character/character';
 import { Terrain } from '@/objects/terrain/terrain';
 import { Debugger } from '@/tools/debugger';
-import { AmbientLight, MeshBasicMaterial, PlaneGeometry, Mesh } from 'three';
 import { Vector2 } from '@/utils/vector_helper';
+import {
+  AmbientLight,
+  Mesh,
+  MeshBasicMaterial,
+  PlaneGeometry,
+  Vector3,
+} from 'three';
 
 /** @import { Scene, WebGLRenderer, Camera, Mesh, Object3D  } from 'three'; */
 /** @import { Bootstrap } from '@/core/bootstrap'; */
@@ -68,23 +74,27 @@ export class App {
   async StartAsync() {
     this.loop.Start(this.Render);
 
-    const terrain = new Terrain(this.debugger);
+    const terrain = new Terrain(this.debugger, this.config.texture);
 
-    for (let i = -1; i <= 1; i++) {
-      for (let j = -1; j <= 1; j++) {
-        await terrain.AppendChunkAsync(new Vector2(i, j), 2);
-      }
-    }
+    console.time('terrain generate');
 
+    // await terrain.AppendChunkAsync(new Vector2(0, 0), 1);
+    // await terrain.AppendChunkAsync(new Vector2(0, 1), 1);
+    // await terrain.AppendChunkAsync(new Vector2(1, 1), 6);
+    console.timeEnd('terrain generate');
+
+    console.time('render');
     terrain.RenderChunks((object) => {
       this.AddObject(object);
     });
 
+    console.timeEnd('render');
+
     const character = new Character(new Vector2(75, 75));
     this.AddObject(character.mesh);
 
-    // const controlSrv = new ControlService(terrain, character, this);
-    // this.AddToLoop(controlSrv);
+    const controlSrv = new ControlService(terrain, character, this);
+    this.AddToLoop(controlSrv);
   }
 
   AddToLoop(object) {

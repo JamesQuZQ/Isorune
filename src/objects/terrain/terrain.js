@@ -1,38 +1,38 @@
-import grassTexture from '@/assets/textures/grass.jpg';
-import mountantRockTexture from '@/assets/textures/rock.jpg';
-import rockTexture from '@/assets/textures/stone.png';
-import soilTexture from '@/assets/textures/dirt.png';
-import snowTexture from '@/assets/textures/snow.jpg';
-import sandTexture from '@/assets/textures/sand.jpg';
 import { Chunk } from '@/objects/terrain/chunk';
-import { LoaderHelper } from '@/utils/loader_helper';
+import Voxel, { VoxelType } from '@/objects/voxel';
 import { Noise } from '@/logics/noise';
-import { Vector2 } from '@/utils/vector_helper';
+import { Vector2, Vector3 } from '@/utils/vector_helper';
+import { MeshLambertMaterial, DoubleSide, Matrix4 } from 'three';
 
 /**
  * @namespace Terrain
  */
 
 /** @import { Debugger } from '@/tools/debugger'*/
+/** @import { Texture , Vector3 } from 'three'*/
 /** @import { BlockTypeContainer } from '@/objects/terrain/container'*/
 
-//TODO:: for performance assets should load via a CDN
-
 /**
+ * @property {Map} #blocks
+ * @property {Noise} heightNoise
  * @property {Map} chunks
- * @property {Map} #textures
+ * @property {boolean} rendered
  * */
 export class Terrain {
-  #textures = new Map();
-  blocks = new Map();
+  #blocks = new Map();
+  rendered = false;
+  heightNoise;
+  material;
+  chunks = new Map();
+  matrixPool = new Matrix4();
 
   /** @type {import('@/logics/noise').NoiseProps} noiseConfig*/
   noiseConfig = {
     octaves: 7,
-    scale: 100,
-    persistant: 1,
-    exponentiation: 6,
-    lacunarity: 2,
+    scale: 450,
+    persistant: 2,
+    exponentiation: 7.5,
+    lacunarity: 3,
   };
 
   debugProp = {
@@ -42,16 +42,29 @@ export class Terrain {
   };
 
   static TERRAIN_CHUNk_LIMIT = 100;
-  static TERRAIN_CHUNk_HEIGHT = 150;
+  static TERRAIN_CHUNk_HEIGHT = 100;
+  static SEA_LEVEL = 3;
+  get blocks() {
+    return new Map(this.#blocks);
+  }
+
+  set blocks(new_blocks) {
+    this.#blocks = new_blocks;
+  }
 
   /**
    * @param {Debugger} gui
+   * @param {Texture} texture
    * */
-  constructor(gui) {
+  constructor(gui, texture) {
     this.heightNoise = new Noise();
-    this.chunks = new Map();
-    // this.InitDebugger(gui);
-    this.rendered = false;
+
+    this.material = new MeshLambertMaterial({
+      map: texture,
+      side: DoubleSide,
+      alphaTest: 0.1,
+      flatShading: true,
+    });
   }
 
   /** @param {Debugger} gui */
@@ -78,16 +91,74 @@ export class Terrain {
   }
 
   /**
+   * @return {Map}
+   * */
+  InitVoxels() {
+    const voxels = new Map();
+
+    return voxels;
+  }
+
+  /**
+   * @param {Chunk} chunk
+   * */
+  async GenerateAsync(chunk) {
+    for (
+      let y = chunk.edge.minEdge.y;
+      y < chunk.edge.maxEdge.y;
+      y += chunk.LOD
+    ) {
+      for (
+        let x = chunk.edge.minEdge.x;
+        x < chunk.edge.maxEdge.x;
+        x += chunk.LOD
+      ) {
+        const blockHeight = Math.floor(
+          this.heightNoise.Get2D(x, y, this.noiseConfig) *
+            Terrain.TERRAIN_CHUNk_HEIGHT,
+        );
+        for (let z = 0; z <= blockHeight; z += chunk.LOD) {
+          const key = `${x},${z},${y}`;
+          if (this.#blocks.has(key)) continue;
+
+          if (z < 3 * chunk.LOD) {
+            this.#blocks.set(key, { type: VoxelType.SOIL });
+            chunk.containsVoxelType.add(VoxelType.SOIL);
+          } else {
+            this.#blocks.set(key, { type: VoxelType.GRASS });
+            chunk.containsVoxelType.add(VoxelType.GRASS);
+          }
+
+          if (blockHeight == 0) {
+            for (
+              let currLevel = chunk.LOD;
+              z <= Terrain.SEA_LEVEL * chunk.LOD;
+              z += chunk.LOD
+            ) {
+              const key = `${x},${currLevel},${y}`;
+              this.#blocks.set(key, { type: VoxelType.WATER });
+              chunk.containsVoxelType.add(VoxelType.WATER);
+            }
+          }
+        }
+      }
+    }
+  }
+
+  /**
    * @param {Vector2} coordinate
    * @param {number} levelOfDetail
+   * @param {*} texture
    * */
   async AppendChunkAsync(coordinate, levelOfDetail) {
-    const chunk = await new Chunk(
+    const chunk = new Chunk(
       coordinate,
       this.debugProp.chunkSize,
       levelOfDetail,
       this.debugProp.max_height,
-    ).GenerateAsync(this.heightNoise, this.noiseConfig, this.blocks);
+    );
+
+    await this.GenerateAsync(chunk);
 
     this.chunks.set(chunk.coordinate.Tokey(), chunk);
     this.rendered = false;
@@ -95,11 +166,12 @@ export class Terrain {
 
   /**
    * @param {Function} addToApp
+   * @param {Vector3} pos
    * */
-  async RenderChunks(addToApp) {
+  async RenderChunks(addToApp, pos) {
     if (this.rendered) return;
-    this.chunks.forEach((chunk) => {
-      chunk.Create(this.blocks);
+    this.chunks.forEach((/** @type {Chunk}*/ chunk) => {
+      chunk.Create(this.blocks, this.material, this.matrixPool);
       chunk.meshes.forEach((mesh) => {
         addToApp(mesh);
       });
