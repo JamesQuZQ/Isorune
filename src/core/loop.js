@@ -12,20 +12,18 @@ import { App } from '@/core/app';
  * */
 export class Loop {
   #updateables;
-  #postRenderProcesses;
-  #preRenderProcesses;
 
   constructor() {
-    const app = new App();
+    const app = App.instance;
     this.camera = app.camera;
+    /** @type {Scene}*/
     this.scene = app.scene;
+    /** @type {WebGLRenderer}*/
     this.renderer = app.renderer;
     this.stats = app.config.stats;
     this.clock = new Clock();
 
     this.#updateables = [];
-    this.#postRenderProcesses = [];
-    this.#preRenderProcesses = [];
   }
 
   /**
@@ -58,7 +56,8 @@ export class Loop {
 
   PostRender() {
     this.stats.update();
-    //console.log(this.renderer.info.render.calls);
+    // console.log(this.renderer.info.render.triangles);
+    this.renderer.renderLists.dispose();
     this.renderer.info.reset();
   }
 

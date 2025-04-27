@@ -13,7 +13,7 @@ export class Character {
    * */
   constructor(position) {
     const geo = new BoxGeometry(1, 1, 1);
-    geo.translate(position.x, 1 * 0.5, position.y);
+    geo.translate(position.x, 10, position.y);
     const mat = new MeshBasicMaterial({ color: 0xfff000 });
     const mesh = new Mesh(geo, mat);
     this.mesh = mesh;

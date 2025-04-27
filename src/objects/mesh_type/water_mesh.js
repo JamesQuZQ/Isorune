@@ -1,38 +1,92 @@
 import MeshFaces from '@/objects/mesh_type/mesh_faces';
+import { VoxelFace } from '@/objects/voxel';
+import { Terrain } from '@/objects/terrain/terrain';
 
 export default class WaterMesh extends MeshFaces {
-  constructor(voxel, count, material) {
-    super(voxel, count, material);
+  constructor() {
+    super();
   }
 
-  /**
-   * @param {number} x
-   * @param {number} y
-   * @param {number} z
-   * @param {Map} blocks
-   * @param {number} size
-   * @param {Matrix4} pos
-   * */
-  BuildMeshFaces(x, y, z, blocks, size, pos) {
-    const PlaceMeshFace = (key, geometry, direction) => {
-      if (!blocks.has(key)) {
+  BuildMeshFacesAsync(
+    coordinate,
+    blocks,
+    size,
+    edge,
+    voxelFace,
+    material,
+    pos,
+  ) {
+    const x = coordinate.x;
+    const y = coordinate.y;
+    const z = coordinate.z;
+
+    const PlaceTopMeshFace = (key, face) => {
+      const nextVoxelExisted = blocks.has(key);
+      const count = Terrain.TERRAIN_CHUNk_LIMIT * Terrain.TERRAIN_CHUNk_LIMIT;
+      if (nextVoxelExisted) {
+        return;
+      }
+
+      pos.makeTranslation(x, z, y);
+
+      const mesh = this.GetMeshFace(face, size, material, count, voxelFace);
+
+      this.UpdateMesh(pos, face, mesh);
+    };
+
+    const PlaceMeshFace = (key, face, isAtEdge = false) => {
+      const nextVoxelExisted = blocks.has(key);
+      const count = Terrain.TERRAIN_CHUNk_LIMIT * Terrain.TERRAIN_CHUNk_HEIGHT;
+      if (nextVoxelExisted) {
+        return;
+      }
+
+      /*
+       * Generate face without next voxel existed AND
+       * Generate face if the face is not at the edge of chunk
+       * */
+      if (!nextVoxelExisted && !isAtEdge) {
         pos.makeTranslation(x, z, y);
-        geometry.setMatrixAt(this.ndx[direction]++, pos);
+
+        const mesh = this.GetMeshFace(face, size, material, count, voxelFace);
+
+        this.UpdateMesh(pos, face, mesh);
       }
     };
 
-    PlaceMeshFace(`${x + size},${z},${y}`, this.left, 'left');
-    PlaceMeshFace(`${x - size},${z},${y}`, this.right, 'right');
-    PlaceMeshFace(`${x},${z + size},${y}`, this.top, 'top');
-    PlaceMeshFace(`${x},${z},${y + size}`, this.back, 'back');
-    PlaceMeshFace(`${x},${z},${y - size}`, this.front, 'front');
+    const IsAtEdge = (edge, chunkEdge) => {
+      return edge == chunkEdge;
+    };
 
-    this.front.count = this.ndx.front;
-    this.top.count = this.ndx.top;
-    this.back.count = this.ndx.back;
-    this.right.count = this.ndx.right;
-    this.left.count = this.ndx.left;
+    const nextX = x + size;
+    PlaceMeshFace(
+      `${nextX},${z},${y}`,
+      VoxelFace.RIGHT,
+      IsAtEdge(nextX, edge.maxEdge.x),
+    );
 
-    this.UdpateMatrix();
+    const prevX = x - size;
+    PlaceMeshFace(
+      `${prevX},${z},${y}`,
+      VoxelFace.LEFT,
+      IsAtEdge(x, edge.minEdge.x),
+    );
+
+    const nextZ = z + size;
+    PlaceTopMeshFace(`${x},${nextZ},${y}`, VoxelFace.TOP);
+
+    const nextY = y + size;
+    PlaceMeshFace(
+      `${x},${z},${nextY}`,
+      VoxelFace.FRONT,
+      IsAtEdge(nextY, edge.maxEdge.y),
+    );
+
+    const prevY = y - size;
+    PlaceMeshFace(
+      `${x},${z},${prevY}`,
+      VoxelFace.BACk,
+      IsAtEdge(y, edge.minEdge.y),
+    );
   }
 }

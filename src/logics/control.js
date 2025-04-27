@@ -8,6 +8,27 @@ import { Chunk } from '@/objects/terrain/chunk';
 export default class ControlService {
   static DISPOSE_CHUNk_THRESHOLD = Terrain.TERRAIN_CHUNk_LIMIT * 5;
   static VIEW_DISTANCE = 1;
+
+  get characterPosition2() {
+    return new Vector2(this.characterPosition.x, this.characterPosition.z);
+  }
+
+  get characterPosition() {
+    return new Vector3().copy(this.character.mesh.position);
+  }
+
+  get currentChunkXCharOn() {
+    return Math.round(this.characterPosition.x / Terrain.TERRAIN_CHUNk_LIMIT);
+  }
+
+  get currentChunkYCharOn() {
+    return Math.round(this.characterPosition.z / Terrain.TERRAIN_CHUNk_LIMIT);
+  }
+
+  get currentChunkCoordinate() {
+    return new Vector2(this.currentChunkXCharOn, this.currentChunkYCharOn);
+  }
+
   /**
    * @param {Terrain} terrain - paramDescription
    * @param {Character} character - paramDescription
@@ -39,26 +60,6 @@ export default class ControlService {
     this.vec2Pool = new Vector2();
   }
 
-  get characterPosition2() {
-    return new Vector2(this.characterPosition.x, this.characterPosition.z);
-  }
-
-  get characterPosition() {
-    return new Vector3().copy(this.character.mesh.position);
-  }
-
-  get currentChunkXCharOn() {
-    return Math.round(this.characterPosition.x / Terrain.TERRAIN_CHUNk_LIMIT);
-  }
-
-  get currentChunkYCharOn() {
-    return Math.round(this.characterPosition.z / Terrain.TERRAIN_CHUNk_LIMIT);
-  }
-
-  get currentChunkCoordinate() {
-    return new Vector2(this.currentChunkXCharOn, this.currentChunkYCharOn);
-  }
-
   addChunkToApp = (object) => this.app.AddObject(object);
   removeChunkFromApp = (object) => this.app.DisposeObject(object);
 
@@ -79,7 +80,6 @@ export default class ControlService {
       this.character.mesh.translateX(delta * 25);
     }
 
-    // console.log(currentChunkCoordinate);
     /* NOTE:
      * Only Render when character move
      * when character moved out of the current chunk bound =>
@@ -125,9 +125,8 @@ export default class ControlService {
         this.viewedChunkCoordinate.set(xOff, yOff);
 
         /** @type {Chunk} chunk*/
-        const chunk = this.terrain.chunks.get(
-          this.viewedChunkCoordinate.Tokey(),
-        );
+        const chunk = this.terrain.GetChunk(this.viewedChunkCoordinate.Tokey());
+
         if (chunk) {
           const isCenterChunk =
             chunk.coordinate.Tokey() == this.currentChunkCoordinate.Tokey();
@@ -135,11 +134,13 @@ export default class ControlService {
             isCenterChunk &&
             chunk.coordinate.Tokey() != this.lastChunkCoordinate.Tokey()
           ) {
-            console.log('moved out of the center chunk');
-            this.terrain.RenderChunks(this.addChunkToApp);
           }
         } else {
-          await this.terrain.AppendChunkAsync(this.viewedChunkCoordinate, 4);
+          const chunk = await this.terrain.AppendChunkAsync(
+            this.viewedChunkCoordinate,
+            4,
+          );
+          await this.terrain.RenderChunks(chunk, this.addChunkToApp);
         }
       }
     }
@@ -153,8 +154,8 @@ export default class ControlService {
    * */
   UpdateTerrainOnCharacterPosition() {
     if (!this.terrain.chunks) return;
+
     // for (const chunk of this.terrain.chunks.values()) {
-    //   console.log(this.terrain.chunks);
     //   if (this.viewable.has(chunk.coordinate.Tokey())) {
     //     if (
     //       this.characterPosition2.distanceTo(chunk.edge) >=

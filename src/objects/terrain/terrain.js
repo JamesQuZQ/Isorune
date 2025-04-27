@@ -1,15 +1,17 @@
 import { Chunk } from '@/objects/terrain/chunk';
-import Voxel, { VoxelType } from '@/objects/voxel';
+import { VoxelType } from '@/objects/voxel';
 import { Noise } from '@/logics/noise';
-import { Vector2, Vector3 } from '@/utils/vector_helper';
-import { MeshLambertMaterial, DoubleSide, Matrix4 } from 'three';
+import MeshFaces from '@/objects/mesh_type/mesh_faces';
+import WaterMesh from '@/objects/mesh_type/water_mesh';
+import { MeshLambertMaterial, DoubleSide } from 'three';
+import Biome from '@/objects/biome';
 
 /**
  * @namespace Terrain
  */
 
 /** @import { Debugger } from '@/tools/debugger'*/
-/** @import { Texture , Vector3 } from 'three'*/
+/** @import { Vector2 , Vector3 } from 'three'*/
 /** @import { BlockTypeContainer } from '@/objects/terrain/container'*/
 
 /**
@@ -23,33 +25,28 @@ export class Terrain {
   rendered = false;
   heightNoise;
   material;
-  chunks = new Map();
-  matrixPool = new Matrix4();
+  #chunks = new Map();
 
   /** @type {import('@/logics/noise').NoiseProps} noiseConfig*/
   noiseConfig = {
-    octaves: 7,
-    scale: 450,
-    persistant: 2,
-    exponentiation: 7.5,
-    lacunarity: 3,
+    octaves: 15,
+    scale: 350,
+    persistant: 10,
+    exponentiation: 5,
+    lacunarity: 100,
   };
 
-  debugProp = {
-    LOD: 3, // Level Of Detail
-    chunkSize: Terrain.TERRAIN_CHUNk_LIMIT,
-    max_height: Terrain.TERRAIN_CHUNk_HEIGHT,
-  };
+  static TERRAIN_CHUNk_LIMIT = 150;
+  static TERRAIN_CHUNk_HEIGHT = 250;
+  static SEA_LEVEL = 2;
+  static DEFAULT_LOD = 2;
 
-  static TERRAIN_CHUNk_LIMIT = 100;
-  static TERRAIN_CHUNk_HEIGHT = 100;
-  static SEA_LEVEL = 3;
   get blocks() {
-    return new Map(this.#blocks);
+    return new WeakMap(this.#blocks);
   }
 
-  set blocks(new_blocks) {
-    this.#blocks = new_blocks;
+  GetChunk(coordinate) {
+    return this.#chunks.get(coordinate);
   }
 
   /**
@@ -65,80 +62,63 @@ export class Terrain {
       alphaTest: 0.1,
       flatShading: true,
     });
-  }
 
-  /** @param {Debugger} gui */
-  InitDebugger(gui) {
-    const chunkFolder = gui.addFolder('Chunk Config');
-
-    const update = () => {
-      this.DebugUpdate(
-        this.GetLevelOfDetail(this.debugProp.LOD),
-        this.debugProp.chunkSize,
-      );
-    };
-
-    chunkFolder.add(this.noiseConfig, 'octaves', 1, 5, 1).onChange(update);
-    chunkFolder.add(this.noiseConfig, 'scale', 20, 100, 2).onChange(update);
-    chunkFolder
-      .add(this.noiseConfig, 'persistant', 0.1, 1, 0.1)
-      .onChange(update);
-    chunkFolder.add(this.noiseConfig, 'lacunarity', 1, 10).onChange(update);
-    chunkFolder.add(this.noiseConfig, 'exponentiation', 1, 7).onChange(update);
-    chunkFolder.add(this.debugProp, 'LOD', 0, 4, 1).onChange(update);
-    chunkFolder.add(this.debugProp, 'chunkSize', 30, 300, 10).onChange(update);
-    chunkFolder.add(this.debugProp, 'max_height', 10, 100, 10).onChange(update);
-  }
-
-  /**
-   * @return {Map}
-   * */
-  InitVoxels() {
-    const voxels = new Map();
-
-    return voxels;
+    this.biome = new Biome();
   }
 
   /**
    * @param {Chunk} chunk
    * */
   async GenerateAsync(chunk) {
-    for (
-      let y = chunk.edge.minEdge.y;
-      y < chunk.edge.maxEdge.y;
-      y += chunk.LOD
-    ) {
-      for (
-        let x = chunk.edge.minEdge.x;
-        x < chunk.edge.maxEdge.x;
-        x += chunk.LOD
-      ) {
+    const updateTerrainInfo =
+      /**
+       * @param {VoxelType} voxelType
+       * */
+      (key, voxelType) => {
+        this.#blocks.set(key, { type: voxelType, size: chunk.LOD });
+        if (chunk.meshFaces[voxelType] != null) return;
+
+        if (voxelType != VoxelType.WATER) {
+          chunk.meshFaces[voxelType] = new MeshFaces();
+        } else {
+          chunk.meshFaces[voxelType] = new WaterMesh();
+        }
+      };
+
+    const size = chunk.LOD;
+
+    for (let y = chunk.edge.minEdge.y; y < chunk.edge.maxEdge.y; y += size) {
+      for (let x = chunk.edge.minEdge.x; x < chunk.edge.maxEdge.x; x += size) {
         const blockHeight = Math.floor(
           this.heightNoise.Get2D(x, y, this.noiseConfig) *
             Terrain.TERRAIN_CHUNk_HEIGHT,
         );
-        for (let z = 0; z <= blockHeight; z += chunk.LOD) {
+
+        for (let z = 0; z <= blockHeight; z += size) {
           const key = `${x},${z},${y}`;
           if (this.#blocks.has(key)) continue;
 
-          if (z < 3 * chunk.LOD) {
-            this.#blocks.set(key, { type: VoxelType.SOIL });
-            chunk.containsVoxelType.add(VoxelType.SOIL);
+          if (z < 2 * size) {
+            updateTerrainInfo(key, VoxelType.SOIL);
+          } else if (z < 3 * size) {
+            updateTerrainInfo(key, VoxelType.SAND);
           } else {
-            this.#blocks.set(key, { type: VoxelType.GRASS });
-            chunk.containsVoxelType.add(VoxelType.GRASS);
+            updateTerrainInfo(key, VoxelType.GRASS);
           }
+        }
 
-          if (blockHeight == 0) {
-            for (
-              let currLevel = chunk.LOD;
-              z <= Terrain.SEA_LEVEL * chunk.LOD;
-              z += chunk.LOD
-            ) {
-              const key = `${x},${currLevel},${y}`;
-              this.#blocks.set(key, { type: VoxelType.WATER });
-              chunk.containsVoxelType.add(VoxelType.WATER);
-            }
+        /*
+         * Create SEA
+         * */
+        if (blockHeight < 3 * size) {
+          for (
+            let currLevel = 1;
+            currLevel <= Terrain.SEA_LEVEL - blockHeight;
+            currLevel += size
+          ) {
+            const key = `${x},${currLevel},${y}`;
+            if (this.#blocks.has(key)) continue;
+            updateTerrainInfo(key, VoxelType.WATER);
           }
         }
       }
@@ -148,34 +128,40 @@ export class Terrain {
   /**
    * @param {Vector2} coordinate
    * @param {number} levelOfDetail
-   * @param {*} texture
+   *
+   * @returns {Promise<Chunk>}
    * */
   async AppendChunkAsync(coordinate, levelOfDetail) {
+    const coordinatekey = coordinate.Tokey();
+    if (this.#chunks.has(coordinatekey)) return;
+
     const chunk = new Chunk(
       coordinate,
-      this.debugProp.chunkSize,
+      Terrain.TERRAIN_CHUNk_LIMIT,
       levelOfDetail,
-      this.debugProp.max_height,
+      this.biome,
     );
 
     await this.GenerateAsync(chunk);
 
-    this.chunks.set(chunk.coordinate.Tokey(), chunk);
+    this.#chunks.set(coordinatekey, chunk);
     this.rendered = false;
+
+    return chunk;
   }
 
   /**
+   * @param {Chunk} chunk
    * @param {Function} addToApp
-   * @param {Vector3} pos
    * */
-  async RenderChunks(addToApp, pos) {
+  async RenderChunks(chunk, addToApp) {
     if (this.rendered) return;
-    this.chunks.forEach((/** @type {Chunk}*/ chunk) => {
-      chunk.Create(this.blocks, this.material, this.matrixPool);
-      chunk.meshes.forEach((mesh) => {
-        addToApp(mesh);
-      });
+
+    await chunk.CreateAsync(this.#blocks, this.material, this.biome);
+    chunk.meshes.forEach((mesh) => {
+      addToApp(mesh);
     });
+
     this.rendered = true;
   }
 
@@ -189,6 +175,6 @@ export class Terrain {
       removeFromApp(mesh);
     });
 
-    this.chunks.delete(chunk.coordinate.Tokey());
+    this.#chunks.delete(chunk.coordinate.Tokey());
   }
 }

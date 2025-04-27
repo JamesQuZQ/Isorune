@@ -1,121 +1,174 @@
-import { InstancedMesh, MeshLambertMaterial } from 'three';
-import { VoxelType } from '@/objects/voxel';
+import { DynamicDrawUsage, InstancedMesh, Material, Matrix4 } from 'three';
+import Voxel, { VoxelType, VoxelFace } from '@/objects/voxel';
+import { Terrain } from '../terrain/terrain';
 
 export default class MeshFaces {
-  /**
-   * @param {Voxel} voxel
-   * @param {number} count
-   * @param {MeshLambertMaterial} material
-   * */
-  constructor(voxel, count, material) {
-    const mat = material;
-    this.front = new InstancedMesh(voxel.front, mat, count);
-    this.top = new InstancedMesh(voxel.top, mat, count);
-    this.back = new InstancedMesh(voxel.back, mat, count);
-    this.right = new InstancedMesh(voxel.right, mat, count);
-    this.left = new InstancedMesh(voxel.left, mat, count);
-    this.ndx = {
-      front: 0,
-      top: 0,
-      back: 0,
-      left: 0,
-      right: 0,
-    };
+  constructor() {
+    this.meshFacesInstace = new Array(5);
+    this.ndx = new Array(5).fill(0);
   }
 
   /**
-   * @param {number} x
-   * @param {number} y
-   * @param {number} z
+   * @param {VoxelFace} face
+   * @param {number} size
+   * @param {Material} mat
+   * @param {number} count
+   * @param {Voxel} voxel
+   *
+   * @returns {InstancedMesh}
+   * */
+  GetMeshFace(face, size, mat, count, voxel) {
+    if (this.meshFacesInstace[face]) {
+      return this.meshFacesInstace[face];
+    }
+
+    const mesh = new InstancedMesh(voxel.GetFace(face, size), mat, count);
+
+    return (this.meshFacesInstace[face] = mesh);
+  }
+
+  UpdateMesh(pos, face, mesh) {
+    mesh.setMatrixAt(this.ndx[face]++, pos);
+
+    this.UpdateInstanceCount(face);
+
+    this.UdpateMatrix(face);
+  }
+
+  /**
+   * @param {Vector3} coordinate
    * @param {Map} blocks
    * @param {number} size
-   * @param {Matrix4} pos
    * @param {*} edge
+   * @param {VoxelFace} voxelFace
+   * @param {*} material
+   * @param {Matrix4} pos
    * */
-  BuildMeshFaces(x, y, z, blocks, size, pos, edge) {
-    const PlaceMeshFace = (key, geometry, direction) => {
-      if (!blocks.has(key) || blocks.get(key).type == VoxelType.WATER) {
+  async BuildMeshFacesAsync(
+    coordinate,
+    blocks,
+    size,
+    edge,
+    voxelFace,
+    material,
+    pos,
+  ) {
+    const x = coordinate.x;
+    const y = coordinate.y;
+    const z = coordinate.z;
+
+    const PlaceTopMeshFace = async (key, face) => {
+      const nextVoxelExisted = blocks.has(key);
+      const count = Terrain.TERRAIN_CHUNk_LIMIT * Terrain.TERRAIN_CHUNk_LIMIT;
+      if (nextVoxelExisted) {
+        return;
+      }
+
+      pos.makeTranslation(x, z, y);
+
+      const mesh = this.GetMeshFace(face, size, material, count, voxelFace);
+
+      this.UpdateMesh(pos, face, mesh);
+    };
+
+    const PlaceMeshFace = async (key, face, isAtEdge = false) => {
+      const nextVoxelExisted = blocks.has(key);
+      const count = Terrain.TERRAIN_CHUNk_HEIGHT * Terrain.TERRAIN_CHUNk_LIMIT;
+      if (nextVoxelExisted) {
+        return;
+      }
+
+      /*
+       * Generate face without next voxel existed OR
+       * Generate face if next voxel is Water OR
+       * Generate face if the face is not at the edge of chunk
+       * */
+      const isWater = () => {
+        return isAtEdge ? false : blocks.get(key).type == VoxelType.WATER;
+      };
+
+      if ((!nextVoxelExisted && !isAtEdge) || isWater()) {
         pos.makeTranslation(x, z, y);
-        geometry.setMatrixAt(this.ndx[direction]++, pos);
+
+        const mesh = this.GetMeshFace(face, size, material, count, voxelFace);
+        this.UpdateMesh(pos, face, mesh);
       }
     };
 
-    PlaceMeshFace(`${x + size},${z},${y}`, this.left, 'left');
-    PlaceMeshFace(`${x - size},${z},${y}`, this.right, 'right');
-    PlaceMeshFace(`${x},${z + size},${y}`, this.top, 'top');
-    PlaceMeshFace(`${x},${z},${y + size}`, this.back, 'back');
-    PlaceMeshFace(`${x},${z},${y - size}`, this.front, 'front');
+    const IsAtEdge = (edge, chunkEdge) => {
+      return edge == chunkEdge;
+    };
 
-    this.front.count = this.ndx.front;
-    this.top.count = this.ndx.top;
-    this.back.count = this.ndx.back;
-    this.right.count = this.ndx.right;
-    this.left.count = this.ndx.left;
+    const nextX = x + size;
+    await PlaceMeshFace(
+      `${nextX},${z},${y}`,
+      VoxelFace.RIGHT,
+      IsAtEdge(nextX, edge.maxEdge.x),
+      (Terrain.TERRAIN_CHUNk_LIMIT * Terrain.TERRAIN_CHUNk_HEIGHT * 3) / 4,
+    );
 
-    this.UdpateMatrix();
+    const prevX = x - size;
+    await PlaceMeshFace(
+      `${prevX},${z},${y}`,
+      VoxelFace.LEFT,
+      IsAtEdge(x, edge.minEdge.x),
+      (Terrain.TERRAIN_CHUNk_LIMIT * Terrain.TERRAIN_CHUNk_HEIGHT * 3) / 4,
+    );
+
+    const nextZ = z + size;
+    await PlaceTopMeshFace(
+      `${x},${nextZ},${y}`,
+      VoxelFace.TOP,
+      Terrain.TERRAIN_CHUNk_LIMIT * Terrain.TERRAIN_CHUNk_LIMIT,
+    );
+
+    const nextY = y + size;
+    await PlaceMeshFace(
+      `${x},${z},${nextY}`,
+      VoxelFace.FRONT,
+      IsAtEdge(nextY, edge.maxEdge.y),
+      Terrain.TERRAIN_CHUNk_LIMIT * Terrain.TERRAIN_CHUNk_HEIGHT,
+    );
+
+    const prevY = y - size;
+    await PlaceMeshFace(
+      `${x},${z},${prevY}`,
+      VoxelFace.BACk,
+      IsAtEdge(y, edge.minEdge.y),
+      Terrain.TERRAIN_CHUNk_LIMIT * Terrain.TERRAIN_CHUNk_HEIGHT,
+    );
   }
 
-  UdpateMatrix() {
-    this.front.instanceMatrix.needsUpdate = true;
-    this.top.instanceMatrix.needsUpdate = true;
-    this.back.instanceMatrix.needsUpdate = true;
-    this.right.instanceMatrix.needsUpdate = true;
-    this.left.instanceMatrix.needsUpdate = true;
+  UpdateInstanceCount(meshFace) {
+    this.meshFacesInstace[meshFace].count = this.ndx[meshFace];
   }
 
-  Hide() {
-    this.HideLeft();
-    this.HideTop();
-    this.HideBack();
-    this.HideFront();
-    this.HideRight();
+  UdpateMatrix(meshFace) {
+    /** @type {InstancedMesh}*/
+    const faceMesh = this.meshFacesInstace[meshFace];
+    faceMesh.instanceMatrix.needsUpdate = true;
+    faceMesh.instanceMatrix.setUsage(DynamicDrawUsage);
+    faceMesh.computeBoundingBox();
+    faceMesh.computeBoundingSphere();
   }
 
-  HideTop() {
-    this.top.visible = false;
+  HideAll() {
+    for (const meshFace of Object.values(VoxelFace)) {
+      this.meshFacesInstace[meshFace].visible = false;
+    }
   }
 
-  HideFront() {
-    this.front.visible = false;
+  Hide(meshFace) {
+    this.meshFacesInstace[meshFace].visible = false;
   }
 
-  HideBack() {
-    this.back.visible = false;
+  ShowAll() {
+    for (const meshFace of Object.values(VoxelFace)) {
+      this.meshFacesInstace[meshFace].visible = true;
+    }
   }
 
-  HideLeft() {
-    this.left.visible = false;
-  }
-
-  HideRight() {
-    this.right.visible = false;
-  }
-
-  Show() {
-    this.ShowLeft();
-    this.ShowTop();
-    this.ShowBack();
-    this.ShowFront();
-    this.ShowRight();
-  }
-
-  ShowTop() {
-    this.top.visible = true;
-  }
-
-  ShowFront() {
-    this.front.visible = true;
-  }
-
-  ShowBack() {
-    this.back.visible = true;
-  }
-
-  ShowLeft() {
-    this.left.visible = true;
-  }
-
-  ShowRight() {
-    this.right.visible = true;
+  Show(meshFace) {
+    this.meshFacesInstace[meshFace].visible = true;
   }
 }

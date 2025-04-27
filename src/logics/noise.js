@@ -1,4 +1,4 @@
-import { SimplexNoise } from 'three/examples/jsm/Addons.js';
+import { SimplexNoise, ImprovedNoise } from 'three/examples/jsm/Addons.js';
 
 //NOTE: This Noice class not only help me to create terrain surface but also can build world contents
 
@@ -36,7 +36,8 @@ export class Noise {
     let frequency = 1;
     let normalization = 0;
     for (let octave = 0; octave < property.octaves; octave++) {
-      const noiseValue = this.seed.noise(xoff * frequency, yoff * frequency) * 0.5 + 0.5;
+      const noiseValue =
+        this.seed.noise(xoff * frequency, yoff * frequency) * 0.5 + 0.5;
       total += noiseValue * amplitude;
       normalization += amplitude;
       amplitude *= 2.0 ** -property.persistant;
