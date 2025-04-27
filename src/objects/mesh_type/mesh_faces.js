@@ -1,155 +1,130 @@
-import { DynamicDrawUsage, InstancedMesh, Material, Matrix4 } from 'three';
+import { InstancedMesh, Matrix4, StaticDrawUsage } from 'three';
 import Voxel, { VoxelType, VoxelFace } from '@/objects/voxel';
-import { Terrain } from '../terrain/terrain';
+import { Terrain } from '@/objects/terrain/terrain';
+import { Chunk } from '@/objects/terrain/chunk';
 
 export default class MeshFaces {
-  constructor() {
+  constructor(material, voxelDefinition) {
     this.meshFacesInstace = new Array(5);
     this.ndx = new Array(5).fill(0);
+
+    this.material = material;
+
+    /** @type {Voxel}*/
+    this.voxel = voxelDefinition;
+
+    this.matrix4buffer = new Matrix4();
   }
 
   /**
    * @param {VoxelFace} face
-   * @param {number} size
-   * @param {Material} mat
    * @param {number} count
-   * @param {Voxel} voxel
+   * @param {number} size
    *
    * @returns {InstancedMesh}
    * */
-  GetMeshFace(face, size, mat, count, voxel) {
+  GetOrCreateMeshFace(face, count, size) {
     if (this.meshFacesInstace[face]) {
       return this.meshFacesInstace[face];
     }
 
-    const mesh = new InstancedMesh(voxel.GetFace(face, size), mat, count);
+    const voxelFace = this.voxel.GetFace(face, size);
+    const mesh = new InstancedMesh(voxelFace, this.material, count);
+    mesh.instanceMatrix.setUsage(StaticDrawUsage);
 
     return (this.meshFacesInstace[face] = mesh);
-  }
-
-  UpdateMesh(pos, face, mesh) {
-    mesh.setMatrixAt(this.ndx[face]++, pos);
-
-    this.UpdateInstanceCount(face);
-
-    this.UdpateMatrix(face);
   }
 
   /**
    * @param {Vector3} coordinate
    * @param {Map} blocks
-   * @param {number} size
-   * @param {*} edge
-   * @param {VoxelFace} voxelFace
-   * @param {*} material
-   * @param {Matrix4} pos
+   * @param {Chunk} chunk
    * */
-  async BuildMeshFacesAsync(
-    coordinate,
-    blocks,
-    size,
-    edge,
-    voxelFace,
-    material,
-    pos,
-  ) {
-    const x = coordinate.x;
-    const y = coordinate.y;
-    const z = coordinate.z;
+  async BuildMeshFacesAsync(coordinate, blocks, chunk) {
+    const { edge, LOD: size } = chunk;
+    const { x, y, z } = coordinate;
 
-    const PlaceTopMeshFace = async (key, face) => {
-      const nextVoxelExisted = blocks.has(key);
-      const count = Terrain.TERRAIN_CHUNk_LIMIT * Terrain.TERRAIN_CHUNk_LIMIT;
-      if (nextVoxelExisted) {
-        return;
+    const top_count_buffer =
+      Terrain.TERRAIN_CHUNk_LIMIT * Terrain.TERRAIN_CHUNk_LIMIT;
+    const side_count_buffer =
+      Terrain.TERRAIN_CHUNk_HEIGHT * Terrain.TERRAIN_CHUNk_LIMIT;
+
+    const _shouldPlaceMeshFace = (dx, dy, dz, faceDirection) => {
+      const nx = x + dx;
+      const ny = y + dy;
+      const nz = z + dz;
+
+      if (
+        (faceDirection === VoxelFace.LEFT && x === edge.minEdge.x) ||
+        (faceDirection === VoxelFace.RIGHT && nx === edge.maxEdge.x) ||
+        (faceDirection === VoxelFace.BACk && y === edge.minEdge.y) ||
+        (faceDirection === VoxelFace.FRONT && ny === edge.maxEdge.y)
+      ) {
+        return false;
       }
 
-      pos.makeTranslation(x, z, y);
+      const isNeighborOutsideChunk =
+        nx < edge.minEdge.x ||
+        nx >= edge.maxEdge.x ||
+        ny < edge.minEdge.y ||
+        ny >= edge.maxEdge.y;
 
-      const mesh = this.GetMeshFace(face, size, material, count, voxelFace);
-
-      this.UpdateMesh(pos, face, mesh);
-    };
-
-    const PlaceMeshFace = async (key, face, isAtEdge = false) => {
-      const nextVoxelExisted = blocks.has(key);
-      const count = Terrain.TERRAIN_CHUNk_HEIGHT * Terrain.TERRAIN_CHUNk_LIMIT;
-      if (nextVoxelExisted) {
-        return;
+      if (isNeighborOutsideChunk) {
+        return true;
       }
 
-      /*
-       * Generate face without next voxel existed OR
-       * Generate face if next voxel is Water OR
-       * Generate face if the face is not at the edge of chunk
-       * */
-      const isWater = () => {
-        return isAtEdge ? false : blocks.get(key).type == VoxelType.WATER;
-      };
+      const neighborKey = `${nx},${nz},${ny}`;
+      const neighborBlock = blocks.get(neighborKey);
+      const neighborBlockType = neighborBlock
+        ? neighborBlock.type
+        : VoxelType.AIR;
 
-      if ((!nextVoxelExisted && !isAtEdge) || isWater()) {
-        pos.makeTranslation(x, z, y);
-
-        const mesh = this.GetMeshFace(face, size, material, count, voxelFace);
-        this.UpdateMesh(pos, face, mesh);
-      }
+      return (
+        neighborBlockType === VoxelType.AIR ||
+        neighborBlockType === VoxelType.WATER
+      );
     };
 
-    const IsAtEdge = (edge, chunkEdge) => {
-      return edge == chunkEdge;
-    };
+    this.matrix4buffer.makeTranslation(x, z, y);
 
-    const nextX = x + size;
-    await PlaceMeshFace(
-      `${nextX},${z},${y}`,
-      VoxelFace.RIGHT,
-      IsAtEdge(nextX, edge.maxEdge.x),
-      (Terrain.TERRAIN_CHUNk_LIMIT * Terrain.TERRAIN_CHUNk_HEIGHT * 3) / 4,
-    );
+    if (_shouldPlaceMeshFace(size, 0, 0, VoxelFace.RIGHT)) {
+      await this.AddInstanceGeometry(VoxelFace.RIGHT, side_count_buffer, size);
+    }
 
-    const prevX = x - size;
-    await PlaceMeshFace(
-      `${prevX},${z},${y}`,
-      VoxelFace.LEFT,
-      IsAtEdge(x, edge.minEdge.x),
-      (Terrain.TERRAIN_CHUNk_LIMIT * Terrain.TERRAIN_CHUNk_HEIGHT * 3) / 4,
-    );
+    if (_shouldPlaceMeshFace(-size, 0, 0, VoxelFace.LEFT)) {
+      await this.AddInstanceGeometry(VoxelFace.LEFT, side_count_buffer, size);
+    }
 
-    const nextZ = z + size;
-    await PlaceTopMeshFace(
-      `${x},${nextZ},${y}`,
-      VoxelFace.TOP,
-      Terrain.TERRAIN_CHUNk_LIMIT * Terrain.TERRAIN_CHUNk_LIMIT,
-    );
+    if (_shouldPlaceMeshFace(0, 0, size, VoxelFace.TOP)) {
+      await this.AddInstanceGeometry(VoxelFace.TOP, top_count_buffer, size);
+    }
 
-    const nextY = y + size;
-    await PlaceMeshFace(
-      `${x},${z},${nextY}`,
-      VoxelFace.FRONT,
-      IsAtEdge(nextY, edge.maxEdge.y),
-      Terrain.TERRAIN_CHUNk_LIMIT * Terrain.TERRAIN_CHUNk_HEIGHT,
-    );
+    if (_shouldPlaceMeshFace(0, size, 0, VoxelFace.FRONT)) {
+      await this.AddInstanceGeometry(VoxelFace.FRONT, side_count_buffer, size);
+    }
 
-    const prevY = y - size;
-    await PlaceMeshFace(
-      `${x},${z},${prevY}`,
-      VoxelFace.BACk,
-      IsAtEdge(y, edge.minEdge.y),
-      Terrain.TERRAIN_CHUNk_LIMIT * Terrain.TERRAIN_CHUNk_HEIGHT,
-    );
+    if (_shouldPlaceMeshFace(0, -size, 0, VoxelFace.BACk)) {
+      await this.AddInstanceGeometry(VoxelFace.BACk, side_count_buffer, size);
+    }
   }
 
-  UpdateInstanceCount(meshFace) {
-    this.meshFacesInstace[meshFace].count = this.ndx[meshFace];
+  async AddInstanceGeometry(faceDirection, count, size) {
+    const mesh = this.GetOrCreateMeshFace(faceDirection, count, size);
+
+    if (!mesh) {
+      return;
+    }
+
+    mesh.setMatrixAt(this.ndx[faceDirection], this.matrix4buffer);
+
+    this.ndx[faceDirection]++;
   }
 
-  UdpateMatrix(meshFace) {
-    /** @type {InstancedMesh}*/
-    const faceMesh = this.meshFacesInstace[meshFace];
-    faceMesh.instanceMatrix.needsUpdate = true;
-    faceMesh.instanceMatrix.setUsage(DynamicDrawUsage);
-    faceMesh.computeBoundingBox();
-    faceMesh.computeBoundingSphere();
+  FinalizeMeshFace() {
+    this.meshFacesInstace.forEach((mesh, face) => {
+      mesh.count = this.ndx[face];
+      mesh.instanceMatrix.needsUpdate = true;
+    });
   }
 
   HideAll() {

@@ -1,5 +1,6 @@
 import { Matrix4, Vector2, Vector3 } from 'three';
 import MeshFaces from '@/objects/mesh_type/mesh_faces';
+import TransparentFaces from '@/objects/mesh_type/transparent_mesh';
 import { Terrain } from './terrain';
 import Biome from '../biome';
 
@@ -34,7 +35,6 @@ export class Chunk {
     this.meshFaces = new Array(10);
 
     this.vector3Buffer = new Vector3();
-    this.matrix4Buffer = new Matrix4();
   }
 
   /**
@@ -47,27 +47,51 @@ export class Chunk {
       chunk: this,
       blocks: blocks,
       biome: biome,
-      material: material,
       buffer: this.matrix4Buffer,
     };
 
-    const voxelSize = this.LOD;
-    //NOTE: We don't have to render the faces that is at the edge of the chunk
+    const size = this.LOD;
 
-    const minX = this.edge.minEdge.x;
-    const maxX = this.edge.maxEdge.x;
-    const minY = this.edge.minEdge.y;
-    const maxY = this.edge.maxEdge.y;
+    const edge = this.edge;
+    const minX = edge.minEdge.x;
+    const maxX = edge.maxEdge.x;
+    const minY = edge.minEdge.y;
+    const maxY = edge.maxEdge.y;
+
     const minZ = 0;
     const maxZ = Terrain.TERRAIN_CHUNk_HEIGHT;
 
-    // NOTE: The loop order (y, x, z) might seem unusual but corresponds to:
-    // y: World Y coordinate (horizontal depth)
-    // x: World X coordinate (horizontal width)
-    // z: World Z coordinate (vertical height)
-    for (let y = minY; y < maxY; y += voxelSize) {
-      for (let x = minX; x < maxX; x += voxelSize) {
-        for (let z = minZ; z <= maxZ; z += voxelSize) {
+    const _getOrCreateMeshFace = (blockType) => {
+      let chunkFaces = this.meshFaces[blockType];
+      if (chunkFaces) {
+        return chunkFaces;
+      }
+
+      try {
+        const voxelInfo = biome.GetVoxel(blockType);
+        if (!voxelInfo) {
+          console.warn(
+            `No biome voxel info found for block type: ${blockType}`,
+          );
+        }
+
+        if (voxelInfo.IsTransparent()) {
+          chunkFaces = new TransparentFaces(material, voxelInfo);
+          this.meshFaces[blockType] = chunkFaces;
+        } else {
+          chunkFaces = new MeshFaces(material, voxelInfo);
+          this.meshFaces[blockType] = chunkFaces;
+        }
+
+        return chunkFaces;
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    for (let y = minY; y < maxY; y += size) {
+      for (let x = minX; x < maxX; x += size) {
+        for (let z = minZ; z <= maxZ; z += size) {
           const key = `${x},${z},${y}`;
           if (!blocks.has(key)) {
             continue;
@@ -82,17 +106,13 @@ export class Chunk {
           const blockType = blockData.type;
 
           /**@type {MeshFaces}*/
-          const chunkFaces = this.meshFaces[blockType];
+          const chunkFaces = _getOrCreateMeshFace(blockType);
 
           try {
             await chunkFaces.BuildMeshFacesAsync(
               this.vector3Buffer.set(x, y, z),
               blocks,
-              voxelSize,
-              this.edge,
-              biome.GetVoxel(blockType),
-              material,
-              this.matrix4Buffer,
+              this,
             );
           } catch (error) {
             console.log(error);
@@ -102,6 +122,9 @@ export class Chunk {
     }
 
     this.meshFaces = this.meshFaces.filter((x) => x != null);
+    this.meshFaces.forEach((mesh) => {
+      mesh.FinalizeMeshFace();
+    });
     this.meshes = this.meshFaces.flatMap(
       (/** @type {MeshFaces}*/ mf) => mf.meshFacesInstace,
     );

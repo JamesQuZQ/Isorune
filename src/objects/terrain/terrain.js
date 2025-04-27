@@ -1,8 +1,6 @@
 import { Chunk } from '@/objects/terrain/chunk';
 import { VoxelType } from '@/objects/voxel';
 import { Noise } from '@/logics/noise';
-import MeshFaces from '@/objects/mesh_type/mesh_faces';
-import WaterMesh from '@/objects/mesh_type/water_mesh';
 import { MeshLambertMaterial, DoubleSide } from 'three';
 import Biome from '@/objects/biome';
 
@@ -36,14 +34,10 @@ export class Terrain {
     lacunarity: 100,
   };
 
-  static TERRAIN_CHUNk_LIMIT = 150;
+  static TERRAIN_CHUNk_LIMIT = 160;
   static TERRAIN_CHUNk_HEIGHT = 250;
   static SEA_LEVEL = 2;
-  static DEFAULT_LOD = 2;
-
-  get blocks() {
-    return new WeakMap(this.#blocks);
-  }
+  static DEFAULT_LOD = 4;
 
   GetChunk(coordinate) {
     return this.#chunks.get(coordinate);
@@ -70,25 +64,24 @@ export class Terrain {
    * @param {Chunk} chunk
    * */
   async GenerateAsync(chunk) {
-    const updateTerrainInfo =
-      /**
-       * @param {VoxelType} voxelType
-       * */
-      (key, voxelType) => {
-        this.#blocks.set(key, { type: voxelType, size: chunk.LOD });
-        if (chunk.meshFaces[voxelType] != null) return;
-
-        if (voxelType != VoxelType.WATER) {
-          chunk.meshFaces[voxelType] = new MeshFaces();
-        } else {
-          chunk.meshFaces[voxelType] = new WaterMesh();
-        }
-      };
-
     const size = chunk.LOD;
 
-    for (let y = chunk.edge.minEdge.y; y < chunk.edge.maxEdge.y; y += size) {
-      for (let x = chunk.edge.minEdge.x; x < chunk.edge.maxEdge.x; x += size) {
+    const edge = chunk.edge;
+    const minX = edge.minEdge.x - size;
+    const maxX = edge.maxEdge.x + size;
+    const minY = edge.minEdge.y - size;
+    const maxY = edge.maxEdge.y + size;
+
+    /**
+     * @param {string} key
+     * @param {VoxelType} voxelType
+     * */
+    const updateTerrainInfo = (key, voxelType) => {
+      this.#blocks.set(key, { type: voxelType });
+    };
+
+    for (let y = minY; y < maxY; y += size) {
+      for (let x = minX; x < maxX; x += size) {
         const blockHeight = Math.floor(
           this.heightNoise.Get2D(x, y, this.noiseConfig) *
             Terrain.TERRAIN_CHUNk_HEIGHT,
@@ -102,7 +95,7 @@ export class Terrain {
             updateTerrainInfo(key, VoxelType.SOIL);
           } else if (z < 3 * size) {
             updateTerrainInfo(key, VoxelType.SAND);
-          } else {
+          } else if (z > 3) {
             updateTerrainInfo(key, VoxelType.GRASS);
           }
         }
@@ -110,13 +103,9 @@ export class Terrain {
         /*
          * Create SEA
          * */
-        if (blockHeight < 3 * size) {
-          for (
-            let currLevel = 1;
-            currLevel <= Terrain.SEA_LEVEL - blockHeight;
-            currLevel += size
-          ) {
-            const key = `${x},${currLevel},${y}`;
+        for (let z = 0; z <= Terrain.SEA_LEVEL * size; z += size) {
+          if (z > blockHeight) {
+            const key = `${x},${z},${y}`;
             if (this.#blocks.has(key)) continue;
             updateTerrainInfo(key, VoxelType.WATER);
           }
@@ -131,15 +120,16 @@ export class Terrain {
    *
    * @returns {Promise<Chunk>}
    * */
-  async AppendChunkAsync(coordinate, levelOfDetail) {
+  async AppendChunkAsync(coordinate, levelOfDetail = Terrain.DEFAULT_LOD) {
     const coordinatekey = coordinate.Tokey();
-    if (this.#chunks.has(coordinatekey)) return;
+    if (this.#chunks.has(coordinatekey)) {
+      return this.#chunks.get(coordinatekey);
+    }
 
     const chunk = new Chunk(
       coordinate,
       Terrain.TERRAIN_CHUNk_LIMIT,
       levelOfDetail,
-      this.biome,
     );
 
     await this.GenerateAsync(chunk);
@@ -158,23 +148,11 @@ export class Terrain {
     if (this.rendered) return;
 
     await chunk.CreateAsync(this.#blocks, this.material, this.biome);
+
     chunk.meshes.forEach((mesh) => {
       addToApp(mesh);
     });
 
     this.rendered = true;
-  }
-
-  /**
-   * @param {Chunk} chunk
-   * @param {Function} removeFromApp
-   * */
-  DisposeChunk(chunk, removeFromApp) {
-    chunk.Dispose();
-    chunk.meshes.forEach((mesh) => {
-      removeFromApp(mesh);
-    });
-
-    this.#chunks.delete(chunk.coordinate.Tokey());
   }
 }

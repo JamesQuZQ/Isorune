@@ -27,53 +27,58 @@ export const VoxelFace = {
 };
 
 export default class Voxel {
-  #type;
   /**
    * @param {VoxelType} type
    * */
   constructor(type) {
-    this.#type = type;
+    this.type = type;
     this.faces = new Array(5);
     const size = 1;
 
     this.size = size;
 
-    const right = new PlaneGeometry(size, size);
-    right.rotateY(Math.PI / 2);
-    this.faces[VoxelFace.RIGHT] = right;
+    this.faces[VoxelFace.RIGHT] = new PlaneGeometry(size, size).rotateY(
+      Math.PI / 2,
+    );
 
-    const left = new PlaneGeometry(size, size);
-    left.rotateY(-Math.PI / 2);
-    this.faces[VoxelFace.LEFT] = left;
+    this.faces[VoxelFace.LEFT] = new PlaneGeometry(size, size).rotateY(
+      -Math.PI / 2,
+    );
 
-    const top = new PlaneGeometry(size, size);
-    top.rotateX(-Math.PI / 2);
-    this.faces[VoxelFace.TOP] = top;
+    this.faces[VoxelFace.TOP] = new PlaneGeometry(size, size).rotateX(
+      -Math.PI / 2,
+    );
 
-    const front = new PlaneGeometry(size, size);
-    this.faces[VoxelFace.FRONT] = front;
-
-    const back = new PlaneGeometry(size, size);
-    this.faces[VoxelFace.BACk] = back;
+    this.faces[VoxelFace.FRONT] = new PlaneGeometry(size, size);
+    this.faces[VoxelFace.BACk] = new PlaneGeometry(size, size).rotateY(Math.PI);
   }
 
-  GetFace(voxelType, size = 1) {
+  IsTransparent() {
+    return this.type == VoxelType.AIR || this.type == VoxelType.WATER;
+  }
+
+  /**
+   * @param {VoxelFace} faceDirection
+   * @param {number} [size=1]
+   *
+   * @return {PlaneGeometry}
+   * */
+  GetFace(faceDirection, size = 2) {
+    const face = this.faces[faceDirection].clone();
+
+    face.scale(size, size, size);
+
     const half = size * 0.5;
-    const face = this.faces[voxelType];
 
-    if (size != this.size) {
-      face.scale(size, size, size);
-    }
-
-    if (voxelType == VoxelFace.RIGHT) {
+    if (faceDirection == VoxelFace.RIGHT) {
       face.translate(size, half, half);
-    } else if (voxelType == VoxelFace.LEFT) {
+    } else if (faceDirection == VoxelFace.LEFT) {
       face.translate(0, half, half);
-    } else if (voxelType == VoxelFace.TOP) {
+    } else if (faceDirection == VoxelFace.TOP) {
       face.translate(half, size, half);
-    } else if (voxelType == VoxelFace.FRONT) {
+    } else if (faceDirection == VoxelFace.FRONT) {
       face.translate(half, half, size);
-    } else if (voxelType == VoxelFace.BACk) {
+    } else if (faceDirection == VoxelFace.BACk) {
       face.translate(half, half, 0);
     }
 

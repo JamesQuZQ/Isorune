@@ -1,12 +1,13 @@
 import { BLOCkS } from '@/game_config/block';
 import ThreeHelper from '@/utils/three_helper';
 import Voxel, { VoxelFace, VoxelType } from './voxel';
-import { Terrain } from '@/objects/terrain/terrain';
+
+/** @import { Terrain } from '@/objects/terrain/terrain'*/
 
 export default class Biome {
   voxels = new Array(10);
   constructor() {
-    this.CreateWorldVoxel();
+    this.#CreateWorldVoxel();
   }
 
   /**
@@ -18,9 +19,7 @@ export default class Biome {
     return this.voxels[type];
   }
 
-  CreateWorldVoxel() {
-    const voxelSize = 1;
-
+  #CreateWorldVoxel() {
     const {
       tileSize,
       atlasWidth,
