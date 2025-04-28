@@ -1,7 +1,7 @@
 import { Matrix4, Vector2, Vector3 } from 'three';
 import MeshFaces from '@/objects/mesh_type/mesh_faces';
 import TransparentFaces from '@/objects/mesh_type/transparent_mesh';
-import { Terrain } from './terrain';
+import { Terrain } from '@/objects/terrain';
 import Biome from '../biome';
 
 /**

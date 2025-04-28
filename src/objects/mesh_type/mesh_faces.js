@@ -1,7 +1,6 @@
 import { InstancedMesh, Matrix4, StaticDrawUsage } from 'three';
 import Voxel, { VoxelType, VoxelFace } from '@/objects/voxel';
-import { Terrain } from '@/objects/terrain/terrain';
-import { Chunk } from '@/objects/terrain/chunk';
+import { Terrain, Chunk } from '@/objects/terrain';
 
 export default class MeshFaces {
   constructor(material, voxelDefinition) {
@@ -53,25 +52,6 @@ export default class MeshFaces {
       const nx = x + dx;
       const ny = y + dy;
       const nz = z + dz;
-
-      if (
-        (faceDirection === VoxelFace.LEFT && x === edge.minEdge.x) ||
-        (faceDirection === VoxelFace.RIGHT && nx === edge.maxEdge.x) ||
-        (faceDirection === VoxelFace.BACk && y === edge.minEdge.y) ||
-        (faceDirection === VoxelFace.FRONT && ny === edge.maxEdge.y)
-      ) {
-        return false;
-      }
-
-      const isNeighborOutsideChunk =
-        nx < edge.minEdge.x ||
-        nx >= edge.maxEdge.x ||
-        ny < edge.minEdge.y ||
-        ny >= edge.maxEdge.y;
-
-      if (isNeighborOutsideChunk) {
-        return true;
-      }
 
       const neighborKey = `${nx},${nz},${ny}`;
       const neighborBlock = blocks.get(neighborKey);

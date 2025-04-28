@@ -1,8 +1,9 @@
-import { Chunk } from '@/objects/terrain/chunk';
-import { VoxelType } from '@/objects/voxel';
+import { Chunk } from '@/objects/terrain';
 import { Noise } from '@/logics/noise';
-import { MeshLambertMaterial, DoubleSide } from 'three';
 import Biome from '@/objects/biome';
+import { VoxelType } from '@/objects/voxel';
+
+import { MeshLambertMaterial, DoubleSide } from 'three';
 
 /**
  * @namespace Terrain
@@ -80,8 +81,8 @@ export class Terrain {
       this.#blocks.set(key, { type: voxelType });
     };
 
-    for (let y = minY; y < maxY; y += size) {
-      for (let x = minX; x < maxX; x += size) {
+    for (let y = minY; y <= maxY; y += size) {
+      for (let x = minX; x <= maxX; x += size) {
         const blockHeight = Math.floor(
           this.heightNoise.Get2D(x, y, this.noiseConfig) *
             Terrain.TERRAIN_CHUNk_HEIGHT,

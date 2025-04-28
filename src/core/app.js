@@ -2,12 +2,12 @@ import { Bootstrap } from '@/core/bootstrap';
 import { Loop } from '@/core/loop';
 import ControlService from '@/logics/control';
 import { Character } from '@/objects/character/character';
-import { Terrain } from '@/objects/terrain/terrain';
+import { Terrain } from '@/objects/terrain/';
 import { Debugger } from '@/tools/debugger';
 import { Vector2 } from '@/utils/vector_helper';
 import { AmbientLight } from 'three';
 
-/** @import { Scene, WebGLRenderer, Camera, Mesh, Object3D  } from 'three'; */
+/** @import { Scene  } from 'three'; */
 /** @import { Bootstrap } from '@/core/bootstrap'; */
 
 /** Apply Singleton Pattern
@@ -71,19 +71,11 @@ export class App {
 
     const terrain = new Terrain(this.debugger, this.config.texture);
 
-    const newChunk = await terrain.AppendChunkAsync(new Vector2(0, 0), 4);
+    const character = new Character(new Vector2(75, 75));
+    this.AddObject(character.mesh);
 
-    console.time('RenderChunks');
-    await terrain.RenderChunks(newChunk, (obj) => {
-      this.AddObject(obj);
-    });
-    console.timeEnd('RenderChunks');
-
-    // const character = new Character(new Vector2(75, 75));
-    // this.AddObject(character.mesh);
-
-    // const controlSrv = new ControlService(terrain, character, this);
-    // this.AddToLoop(controlSrv);
+    const controlSrv = new ControlService(terrain, character, this);
+    this.AddToLoop(controlSrv);
   }
 
   AddToLoop(object) {

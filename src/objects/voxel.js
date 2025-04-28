@@ -1,4 +1,4 @@
-import { BufferAttribute, PlaneGeometry } from 'three';
+import { PlaneGeometry } from 'three';
 
 /**@namespace Voxel*/
 
@@ -16,6 +16,7 @@ export const VoxelType = {
   ROCk: 4,
   SNOW_ROCk: 5,
   SNOW_DIRT: 6,
+  AIR: 7,
 };
 
 export const VoxelFace = {

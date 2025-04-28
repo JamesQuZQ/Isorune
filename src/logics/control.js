@@ -1,9 +1,11 @@
 import { Terrain } from '@/objects/terrain/terrain';
 import { Vector2, Vector3 } from '@/utils/vector_helper';
-import { Chunk } from '@/objects/terrain/chunk';
 
-/**@import { App } from '@/core/app';*/
-/** @import { Character } from '@/objects/character/character';*/
+/**
+ * @import { App } from '@/core/app';
+ * @import { Character } from '@/objects/character/character';
+ * @import { Chunk } from '@/objects/terrain/chunk';
+ */
 
 export default class ControlService {
   static DISPOSE_CHUNk_THRESHOLD = Terrain.TERRAIN_CHUNk_LIMIT * 3;

@@ -1,4 +1,4 @@
-import { SimplexNoise, ImprovedNoise } from 'three/examples/jsm/Addons.js';
+import { SimplexNoise } from 'three/examples/jsm/Addons.js';
 
 //NOTE: This Noice class not only help me to create terrain surface but also can build world contents
 

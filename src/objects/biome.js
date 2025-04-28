@@ -1,6 +1,6 @@
 import { BLOCkS } from '@/game_config/block';
 import ThreeHelper from '@/utils/three_helper';
-import Voxel, { VoxelFace, VoxelType } from './voxel';
+import Voxel, { VoxelFace, VoxelType } from '@/objects/voxel';
 
 /** @import { Terrain } from '@/objects/terrain/terrain'*/
 
