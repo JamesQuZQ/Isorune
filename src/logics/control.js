@@ -6,8 +6,8 @@ import { Chunk } from '@/objects/terrain/chunk';
 /** @import { Character } from '@/objects/character/character';*/
 
 export default class ControlService {
-  static DISPOSE_CHUNk_THRESHOLD = Terrain.TERRAIN_CHUNk_LIMIT * 5;
-  static VIEW_DISTANCE = 1;
+  static DISPOSE_CHUNk_THRESHOLD = Terrain.TERRAIN_CHUNk_LIMIT * 3;
+  static VIEW_DISTANCE = 0;
 
   get characterPosition2() {
     return new Vector2(this.characterPosition.x, this.characterPosition.z);
@@ -52,7 +52,7 @@ export default class ControlService {
     this.lastPost = new Vector3().clone(this.character.mesh.position);
     this.viewedChunkCoordinate = new Vector2();
 
-    this.viewable = new Set();
+    this.viewable = new WeakSet();
     this.viewPoolSize = 12;
 
     this.lastChunkCoordinate = new Vector2(0, 0);
@@ -121,7 +121,8 @@ export default class ControlService {
       ) {
         const xOff = x + this.currentChunkXCharOn;
         const yOff = z + this.currentChunkYCharOn;
-        this.viewable.add(this.vec2Pool.set(xOff, yOff).Tokey());
+
+        this.viewable.add(this.vec2Pool.set(xOff, yOff));
         this.viewedChunkCoordinate.set(xOff, yOff);
 
         /** @type {Chunk} chunk*/
