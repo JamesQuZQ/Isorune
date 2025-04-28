@@ -1,9 +1,11 @@
 import { Bootstrap } from '@/core/bootstrap';
 import { Loop } from '@/core/loop';
+import ControlService from '@/logics/control';
 import { Character } from '@/objects/character/character';
 import { Terrain } from '@/objects/terrain/terrain';
 import { Debugger } from '@/tools/debugger';
-import { AmbientLight, Vector2 } from 'three';
+import { Vector2 } from '@/utils/vector_helper';
+import { AmbientLight } from 'three';
 
 /** @import { Scene, WebGLRenderer, Camera, Mesh, Object3D  } from 'three'; */
 /** @import { Bootstrap } from '@/core/bootstrap'; */
@@ -15,27 +17,28 @@ import { AmbientLight, Vector2 } from 'three';
  *  @property {Scene} scene
  *  @property {WebGLRenderer} renderer
  *  @property {Camera} camera
- *
+ *  @property {Debugger} debugger
  * */
 export class App {
-  static #_instance;
+  static _instance;
 
   constructor() {
-    if (App.#_instance) {
-      return App.#_instance;
+    if (App._instance) {
+      return App._instance;
     }
 
-    App.#_instance = this;
+    this.state = 0;
   }
 
-  get instance() {
-    if (typeof App.#_instance == 'undefined') {
-      throw new Error('The App has not been instanciate yet');
+  static get instance() {
+    if (typeof App._instance === 'undefined') {
+      App._instance = new App();
     }
 
-    return App.#_instance;
+    return App._instance;
   }
 
+  /** @return {Scene} */
   get scene() {
     return this.config.scene;
   }
@@ -50,8 +53,13 @@ export class App {
 
   async InitAsync() {
     this.debugger = new Debugger();
-    this.config = new Bootstrap(this.debugger);
-    this.loop = new Loop(this.camera, this.scene, this.renderer);
+
+    const bootstrap = new Bootstrap(this.debugger);
+    await bootstrap.InitTexture();
+
+    this.config = bootstrap;
+
+    this.loop = new Loop(this.renderer, this.scene, this.camera);
     window.addEventListener('resize', this.config.OnWindowResize, false);
 
     const amlight = new AmbientLight(0xffffff, 1);
@@ -61,42 +69,37 @@ export class App {
   async StartAsync() {
     this.loop.Start();
 
-    const terrain = new Terrain(this.debugger);
-    await terrain.InitTextureAsync();
-    await terrain.GenerateAsync(2, 50);
+    const terrain = new Terrain(this.debugger, this.config.texture);
 
-    // const character = new Character(new Vector2(5, 5));
-    // await this.AddMeshAsync(character);
+    const newChunk = await terrain.AppendChunkAsync(new Vector2(0, 0), 4);
+
+    console.time('RenderChunks');
+    await terrain.RenderChunks(newChunk, (obj) => {
+      this.AddObject(obj);
+    });
+    console.timeEnd('RenderChunks');
+
+    // const character = new Character(new Vector2(75, 75));
+    // this.AddObject(character.mesh);
+
+    // const controlSrv = new ControlService(terrain, character, this);
+    // this.AddToLoop(controlSrv);
+  }
+
+  AddToLoop(object) {
+    this.loop.Add(object);
   }
 
   AddObject(object) {
     this.scene.add(object);
   }
 
-  AddMesh(object) {
-    this.scene.add(object.mesh);
-  }
-
-  async AddMeshAsync(object) {
-    this.loop.Add(object);
-    this.scene.add(object.mesh);
-  }
-
-  async AddAsync(object) {
-    this.loop.Add(object);
-    this.scene.add(object);
-  }
-
-  /**
+  /** Dispose Object in the scene
    * @param {Object3D} object
    * */
-  DisposeMesh(object) {
+  DisposeObject(object) {
     this.scene.remove(object);
     this.renderer.renderLists.dispose();
-  }
-
-  Render() {
-    this.renderer.render(this.scene, this.camera);
   }
 
   Stop() {

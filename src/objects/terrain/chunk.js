@@ -1,65 +1,132 @@
-import { BoxGeometry } from 'three';
-import { BlockTypeContainer } from '@/objects/terrain/container';
-
-/** @import { Noise } from '@/logics/noise'*/
+import { Matrix4, Vector2, Vector3 } from 'three';
+import MeshFaces from '@/objects/mesh_type/mesh_faces';
+import TransparentFaces from '@/objects/mesh_type/transparent_mesh';
+import { Terrain } from './terrain';
+import Biome from '../biome';
 
 /**
  * @property {GeoContainer[]} blockTypes
+ * @property {Vector2} edge
+ * @property {number} size
+ * @property {Group} group
+ * @property {Array.<MeshFaces>} meshFaces
+ *
  * */
 export class Chunk {
-  static SNOW_HEIGHT = 40;
-  static MOUNTANTROCk_HEIGHT = 27;
-  static STONE_HEIGHT = 10;
-  static GRASS_HEIGHT = 3;
-  static SAND_HEIGHT = 0.4;
-  static SOIL_HEIGHT = 0;
-  static RIVER_HEIGHT = 0.2;
-
-  static MAX_TERRAIN_HEIGHT = 70;
-
-  constructor(textures, edge, size, envmap, levelOfDetail) {
-    this.edge = edge;
+  /**
+   * @param {Vector2} coordinate
+   * @param {number} size
+   * @param {number} levelOfDetail
+   * */
+  constructor(coordinate, size, levelOfDetail) {
+    this.coordinate = new Vector2().copy(coordinate);
     this.size = size;
-    this.chunk_id = 0;
-    this.index = 0;
-    this.levelOfDetail = levelOfDetail;
-    this.#InitBlockTypes(textures, envmap);
-  }
-
-  #InitBlockTypes(textures, envmap) {
-    this.blockTypes = {
-      grass: new BlockTypeContainer(textures['grass']),
-      rock: new BlockTypeContainer(textures['mountantRock']),
-      stone: new BlockTypeContainer(textures['rock']),
-      snow: new BlockTypeContainer(textures['snow']),
-      soil: new BlockTypeContainer(textures['soil']),
-      sand: new BlockTypeContainer(textures['sand']),
+    this.edge = {
+      maxEdge: new Vector2(
+        coordinate.x * this.size + this.size,
+        coordinate.y * this.size + this.size,
+      ),
+      minEdge: new Vector2(coordinate.x * this.size, coordinate.y * this.size),
     };
+
+    this.LOD = levelOfDetail;
+
+    /** @type {Array<MeshFaces>}*/
+    this.meshFaces = new Array(10);
+
+    this.vector3Buffer = new Vector3();
   }
 
   /**
-   * @param {Noise} noise - The Noise seed
-   * @param {NoiseConfig} noiseProps
-   * @param {number} max_height
+   * @param {*} blocks
+   * @param {*} material
+   * @param {Biome} biome
    * */
-  async CreateAsync(noise, noiseProps, max_height = Chunk.MAX_TERRAIN_HEIGHT) {
-    for (let y = this.edge.y; y < this.edge.y + this.size; y += this.levelOfDetail) {
-      for (let x = this.edge.x; x < this.edge.x + this.size; x += this.levelOfDetail) {
-        const height = Math.floor(noise.Get2D(x, y, noiseProps) * max_height);
-        const block_geo = new BoxGeometry(1 * this.levelOfDetail, height, 1 * this.levelOfDetail);
-        block_geo.translate(x, height * 0.5, y);
+  async CreateAsync(blocks, material, biome) {
+    const workerData = {
+      chunk: this,
+      blocks: blocks,
+      biome: biome,
+      buffer: this.matrix4Buffer,
+    };
 
-        if (Chunk.SNOW_HEIGHT < height) this.blockTypes.snow.Merge(block_geo);
-        else if (Chunk.MOUNTANTROCk_HEIGHT < height) this.blockTypes.rock.Merge(block_geo);
-        else if (Chunk.STONE_HEIGHT < height) this.blockTypes.stone.Merge(block_geo);
-        else if (Chunk.GRASS_HEIGHT < height) this.blockTypes.grass.Merge(block_geo);
-        else if (Chunk.SAND_HEIGHT < height) this.blockTypes.sand.Merge(block_geo);
-        else if (Chunk.SOIL_HEIGHT <= height) this.blockTypes.soil.Merge(block_geo);
+    const size = this.LOD;
 
-        block_geo.dispose();
+    const edge = this.edge;
+    const minX = edge.minEdge.x;
+    const maxX = edge.maxEdge.x;
+    const minY = edge.minEdge.y;
+    const maxY = edge.maxEdge.y;
+
+    const minZ = 0;
+    const maxZ = Terrain.TERRAIN_CHUNk_HEIGHT;
+
+    const _getOrCreateMeshFace = (blockType) => {
+      let chunkFaces = this.meshFaces[blockType];
+      if (chunkFaces) {
+        return chunkFaces;
+      }
+
+      try {
+        const voxelInfo = biome.GetVoxel(blockType);
+        if (!voxelInfo) {
+          console.warn(
+            `No biome voxel info found for block type: ${blockType}`,
+          );
+        }
+
+        if (voxelInfo.IsTransparent()) {
+          chunkFaces = new TransparentFaces(material, voxelInfo);
+          this.meshFaces[blockType] = chunkFaces;
+        } else {
+          chunkFaces = new MeshFaces(material, voxelInfo);
+          this.meshFaces[blockType] = chunkFaces;
+        }
+
+        return chunkFaces;
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    for (let y = minY; y < maxY; y += size) {
+      for (let x = minX; x < maxX; x += size) {
+        for (let z = minZ; z <= maxZ; z += size) {
+          const key = `${x},${z},${y}`;
+          if (!blocks.has(key)) {
+            continue;
+          }
+
+          const blockData = blocks.get(key);
+          if (!blockData || typeof blockData.type === 'undefined') {
+            console.warn(`Voxel data missing or invalid type at key: ${key}`);
+            continue;
+          }
+
+          const blockType = blockData.type;
+
+          /**@type {MeshFaces}*/
+          const chunkFaces = _getOrCreateMeshFace(blockType);
+
+          try {
+            await chunkFaces.BuildMeshFacesAsync(
+              this.vector3Buffer.set(x, y, z),
+              blocks,
+              this,
+            );
+          } catch (error) {
+            console.log(error);
+          }
+        }
       }
     }
 
-    return this;
+    this.meshFaces = this.meshFaces.filter((x) => x != null);
+    this.meshFaces.forEach((mesh) => {
+      mesh.FinalizeMeshFace();
+    });
+    this.meshes = this.meshFaces.flatMap(
+      (/** @type {MeshFaces}*/ mf) => mf.meshFacesInstace,
+    );
   }
 }

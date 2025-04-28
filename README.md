@@ -2,7 +2,7 @@
 
 ---
 
-![Isorune Icon](Isorune.png)
+![Isorune Icon](assets/Isorune.png)
 
 ## TODO
 

@@ -1,155 +1,158 @@
-import grassTexture from '@/assets/textures/grass.jpg';
-import mountantRockTexture from '@/assets/textures/rock.jpg';
-import rockTexture from '@/assets/textures/stone.png';
-import soilTexture from '@/assets/textures/dirt.png';
-import snowTexture from '@/assets/textures/snow.jpg';
-import sandTexture from '@/assets/textures/sand.jpg';
 import { Chunk } from '@/objects/terrain/chunk';
-import { LoaderHelper } from '@/utils/loader_helper';
+import { VoxelType } from '@/objects/voxel';
 import { Noise } from '@/logics/noise';
-import { Group, Vector2 } from 'three';
-import { App } from '@/core/app';
+import { MeshLambertMaterial, DoubleSide } from 'three';
+import Biome from '@/objects/biome';
 
 /**
  * @namespace Terrain
  */
 
 /** @import { Debugger } from '@/tools/debugger'*/
+/** @import { Vector2 , Vector3 } from 'three'*/
 /** @import { BlockTypeContainer } from '@/objects/terrain/container'*/
 
-//TODO:: for performance assets should load via a CDN
-
+/**
+ * @property {Map} #blocks
+ * @property {Noise} heightNoise
+ * @property {Map} chunks
+ * @property {boolean} rendered
+ * */
 export class Terrain {
-  #textures;
+  #blocks = new Map();
+  rendered = false;
+  heightNoise;
+  material;
+  #chunks = new Map();
 
-  /** @type {import('@/logics/noise').NoiseProps}*/
+  /** @type {import('@/logics/noise').NoiseProps} noiseConfig*/
   noiseConfig = {
-    octaves: 1,
-    scale: 50,
-    persistant: 0.2,
-    exponentiation: 7,
-    lacunarity: 1,
+    octaves: 15,
+    scale: 350,
+    persistant: 10,
+    exponentiation: 5,
+    lacunarity: 100,
   };
 
-  debugProp = {
-    levelOfDetail: 2,
-    chunkSize: 50,
-    max_height: 50,
-  };
+  static TERRAIN_CHUNk_LIMIT = 160;
+  static TERRAIN_CHUNk_HEIGHT = 250;
+  static SEA_LEVEL = 2;
+  static DEFAULT_LOD = 4;
 
-  static TERRAIN_CHUNk_LIMIT = 30;
+  GetChunk(coordinate) {
+    return this.#chunks.get(coordinate);
+  }
 
   /**
    * @param {Debugger} gui
-   * @property {Group[]} chunks
+   * @param {Texture} texture
    * */
-  constructor(gui) {
-    this.app = new App();
+  constructor(gui, texture) {
     this.heightNoise = new Noise();
-    this.chunks = [];
-    this.#textures = {};
 
-    this.InitDebugger(gui);
-  }
-
-  /** @param {Debugger} gui */
-  InitDebugger(gui) {
-    const chunkFolder = gui.addFolder('Chunk Config');
-
-    const update = () => {
-      this.Update(this.debugProp.levelOfDetail, this.debugProp.chunkSize);
-    };
-
-    chunkFolder.add(this.noiseConfig, 'octaves', 1, 5, 1).onChange(update);
-    chunkFolder.add(this.noiseConfig, 'scale', 20, 100, 2).onChange(update);
-    chunkFolder.add(this.noiseConfig, 'persistant', 0.1, 1, 0.1).onChange(update);
-    chunkFolder.add(this.noiseConfig, 'lacunarity', 1, 10).onChange(update);
-    chunkFolder.add(this.noiseConfig, 'exponentiation', 1, 7).onChange(update);
-    chunkFolder.add(this.debugProp, 'levelOfDetail', 2, 8, 2).onChange(update);
-    chunkFolder.add(this.debugProp, 'chunkSize', 30, 100, 10).onChange(update);
-    chunkFolder.add(this.debugProp, 'max_height', 10, 100, 10).onChange(update);
-  }
-
-  async InitTextureAsync() {
-    this.#textures['grass'] = await LoaderHelper.LoadTextureAsync(grassTexture);
-    this.#textures['mountantRock'] = await LoaderHelper.LoadTextureAsync(mountantRockTexture);
-    this.#textures['snow'] = await LoaderHelper.LoadTextureAsync(snowTexture);
-    this.#textures['rock'] = await LoaderHelper.LoadTextureAsync(rockTexture);
-    this.#textures['soil'] = await LoaderHelper.LoadTextureAsync(soilTexture);
-    this.#textures['sand'] = await LoaderHelper.LoadTextureAsync(sandTexture);
-  }
-
-  async CreateChunkAsync(edge, size, levelOfDetail) {
-    const chunk = new Chunk(this.#textures, edge, size, this.envmap, levelOfDetail);
-    return await chunk.CreateAsync(this.heightNoise, this.noiseConfig, this.debugProp.max_height);
-  }
-
-  /** Generate init chunk at the x = 0, y = 0
-   *
-   * @param {number} levelOfDetail
-   * @param {number} chunkSize
-   * */
-  async GenerateAsync(levelOfDetail = 1, chunkSize = Terrain.TERRAIN_CHUNk_LIMIT) {
-    const chunk = await this.CreateChunkAsync(new Vector2(0, 0), chunkSize, levelOfDetail);
-    await this.#LoadContainers(chunk);
-  }
-
-  /**
-   * @param {Vector2} edge
-   * @param {number} size
-   * @param {number} levelOfDetail
-   * */
-  async Append(edge, size, levelOfDetail) {
-    const chunk = await this.CreateChunkAsync(edge, Math.min(size, Terrain.TERRAIN_CHUNk_LIMIT), levelOfDetail);
-  }
-
-  /**
-   * @param {number} levelOfDetail
-   * @param {number} chunkSize
-   * */
-  async Update(levelOfDetail = 2, chunkSize) {
-    await this.DisposeTerrain();
-    await this.GenerateAsync(levelOfDetail, chunkSize);
-  }
-
-  async DisposeTerrain() {
-    if (!this.chunks) return;
-
-    this.chunks.forEach((/** @type {Group} chunk */ chunk) => {
-      chunk.children.forEach((geo) => {
-        geo.material.dispose();
-        geo.geometry.dispose();
-      });
-
-      this.app.DisposeMesh(chunk);
+    this.material = new MeshLambertMaterial({
+      map: texture,
+      side: DoubleSide,
+      alphaTest: 0.1,
+      flatShading: true,
     });
 
-    this.chunks = [];
+    this.biome = new Biome();
   }
-
-  async DisposeChunk() {}
 
   /**
    * @param {Chunk} chunk
    * */
-  async #LoadContainers(chunk) {
-    const group = new Group();
+  async GenerateAsync(chunk) {
+    const size = chunk.LOD;
 
-    for (const [_, value] of Object.entries(chunk.blockTypes)) {
-      /** @type {BlockTypeContainer} geoContainer*/
-      const geoContainer = await value.BuildAsync();
-      group.add(geoContainer.mesh);
-    }
+    const edge = chunk.edge;
+    const minX = edge.minEdge.x - size;
+    const maxX = edge.maxEdge.x + size;
+    const minY = edge.minEdge.y - size;
+    const maxY = edge.maxEdge.y + size;
 
-    this.chunks.push(group);
-
-    group.Tick = (delta) => {
-      group.rotateY(delta * 0.25);
+    /**
+     * @param {string} key
+     * @param {VoxelType} voxelType
+     * */
+    const updateTerrainInfo = (key, voxelType) => {
+      this.#blocks.set(key, { type: voxelType });
     };
 
-    group.receiveShadow = true;
+    for (let y = minY; y < maxY; y += size) {
+      for (let x = minX; x < maxX; x += size) {
+        const blockHeight = Math.floor(
+          this.heightNoise.Get2D(x, y, this.noiseConfig) *
+            Terrain.TERRAIN_CHUNk_HEIGHT,
+        );
 
-    await this.app.AddAsync(group);
-    this.app.Render();
+        for (let z = 0; z <= blockHeight; z += size) {
+          const key = `${x},${z},${y}`;
+          if (this.#blocks.has(key)) continue;
+
+          if (z < 2 * size) {
+            updateTerrainInfo(key, VoxelType.SOIL);
+          } else if (z < 3 * size) {
+            updateTerrainInfo(key, VoxelType.SAND);
+          } else if (z > 3) {
+            updateTerrainInfo(key, VoxelType.GRASS);
+          }
+        }
+
+        /*
+         * Create SEA
+         * */
+        for (let z = 0; z <= Terrain.SEA_LEVEL * size; z += size) {
+          if (z > blockHeight) {
+            const key = `${x},${z},${y}`;
+            if (this.#blocks.has(key)) continue;
+            updateTerrainInfo(key, VoxelType.WATER);
+          }
+        }
+      }
+    }
+  }
+
+  /**
+   * @param {Vector2} coordinate
+   * @param {number} levelOfDetail
+   *
+   * @returns {Promise<Chunk>}
+   * */
+  async AppendChunkAsync(coordinate, levelOfDetail = Terrain.DEFAULT_LOD) {
+    const coordinatekey = coordinate.Tokey();
+    if (this.#chunks.has(coordinatekey)) {
+      return this.#chunks.get(coordinatekey);
+    }
+
+    const chunk = new Chunk(
+      coordinate,
+      Terrain.TERRAIN_CHUNk_LIMIT,
+      levelOfDetail,
+    );
+
+    await this.GenerateAsync(chunk);
+
+    this.#chunks.set(coordinatekey, chunk);
+    this.rendered = false;
+
+    return chunk;
+  }
+
+  /**
+   * @param {Chunk} chunk
+   * @param {Function} addToApp
+   * */
+  async RenderChunks(chunk, addToApp) {
+    if (this.rendered) return;
+
+    await chunk.CreateAsync(this.#blocks, this.material, this.biome);
+
+    chunk.meshes.forEach((mesh) => {
+      addToApp(mesh);
+    });
+
+    this.rendered = true;
   }
 }

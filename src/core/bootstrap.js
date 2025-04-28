@@ -1,18 +1,21 @@
+import { LoaderHelper } from '@/utils/loader_helper';
 import * as THREE from 'three';
-import { OrbitControls, PointerLockControls } from 'three/examples/jsm/Addons.js';
+import {
+  OrbitControls,
+  PointerLockControls,
+} from 'three/examples/jsm/Addons.js';
 import Stats from 'three/examples/jsm/libs/stats.module.js';
+import texturesprite from '@/assets/spritesheet_tiles.png';
 
 /** @import { Debugger } from '@/tools/debugger'*/
 
 /**
- *
  * @property {THREE.Scene} scene
  * @property {OrbitControls | PointerLockControls} control
  * @property {THREE.Camera} camera
  * @property {Debugger} debugger
  * @property {THREE.AxesHelper} axesHelper
  * @property {Stats} stats
- *
  */
 export class Bootstrap {
   /**
@@ -27,14 +30,12 @@ export class Bootstrap {
     this.renderer = this.CreateRenderer();
 
     this.scene = new THREE.Scene();
-    // this.scene.rotateX(-Math.PI * 0.5);
     this.scene.background = new THREE.Color('#96c5fa');
 
     this.camera = this.CreateCamera();
     this.axesHelper = this.CreateAxesHelper();
     this.stats = this.CreateStat();
 
-    // this.control = this.CreatePointLockControl();
     this.control = this.CreateControl();
   }
 
@@ -45,26 +46,33 @@ export class Bootstrap {
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.outputEncoding = THREE.sRGBEncoding;
     renderer.physicallyCorrectLights = true;
+    renderer.setPixelRatio(window.devicePixelRatio * 0.9);
+
     // renderer.shadowMap.enabled = true;
     // renderer.shadowMap.type = PCFSoftShadowMap;
     return renderer;
   }
 
   CreateCamera() {
-    const camera = new THREE.PerspectiveCamera(50, window.innerWidth / window.innerHeight, 0.1, 1000);
+    const camera = new THREE.PerspectiveCamera(
+      50,
+      window.innerWidth / window.innerHeight,
+      0.1,
+      1000,
+    );
     // const camera = new THREE.OrthographicCamera(-50, 50, 50, -50, 0.1, 1000);
     // camera.position.set(60, 40, -40);
-    camera.position.set(0, 0, 100);
+    camera.position.set(0, 50, -50);
 
-    const cameraFolder = this.debugger.addFolder('Camera');
+    // const cameraFolder = this.debugger.addFolder('Camera');
+    //
+    // cameraFolder.add(camera.position, 'x', -100, 100);
+    // cameraFolder.add(camera.position, 'y', -100, 100);
+    // cameraFolder.add(camera.position, 'z', -100, 100);
+    //
+    // cameraFolder.open();
 
-    cameraFolder.add(camera.position, 'x', -100, 100);
-    cameraFolder.add(camera.position, 'y', -100, 100);
-    cameraFolder.add(camera.position, 'z', -100, 100);
-
-    cameraFolder.open();
-
-    camera.updateProjectionMatrix();
+    // camera.updateProjectionMatrix();
 
     return camera;
   }
@@ -84,20 +92,14 @@ export class Bootstrap {
   }
 
   CreatePointLockControl() {
-    const controls = new PointerLockControls(this.camera, this.renderer.domElement);
-
-    controls.addEventListener('change', () => {
-      console.log('pointerlock change');
-    });
-    // controls.addEventListener('lock', () => (menuPanel.style.display = 'none'));
-    // controls.addEventListener(
-    //   'unlock',
-    //   () => (menuPanel.style.display = 'block'),
-    // );
+    const controls = new PointerLockControls(
+      this.camera,
+      this.renderer.domElement,
+    );
 
     return controls;
   }
-
+  noiseProps;
   CreateControl() {
     const orbCtl = new OrbitControls(this.camera, this.renderer.domElement);
     orbCtl.update();
@@ -114,6 +116,17 @@ export class Bootstrap {
     return orbCtl;
   }
 
+  async InitTexture() {
+    const texture = await LoaderHelper.LoadTextureAsync(texturesprite);
+    texture.magFilter = THREE.NearestFilter;
+    texture.minFilter = THREE.NearestFilter;
+
+    texture.wrapS = THREE.ClampToEdgeWrapping;
+    texture.wrapT = THREE.ClampToEdgeWrapping;
+
+    this.texture = texture;
+  }
+
   OnWindowResize() {
     // const canvas = this.renderer.domElement;
     const width = window.innerWidth;
@@ -125,7 +138,18 @@ export class Bootstrap {
     this.camera.updateProjectionMatrix();
 
     this.renderer.setSize(width, height);
-    this.renderer.setPixelRatio(window.devicePixelRatio);
+    this.renderer.setPixelRatio(window.devicePixelRatio * 0.5);
     this.renderer.render(this.scene, this.camera);
+  }
+
+  DisposeScene() {
+    this.scene.dispose();
+  }
+
+  DisposeRenderer() {
+    // disposing renderer
+    this.renderer.hideCanvas();
+    this.renderer.setAnimationLoop(null);
+    this.renderer.dispose();
   }
 }

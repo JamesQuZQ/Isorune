@@ -13,36 +13,16 @@ export class Character {
    * */
   constructor(position) {
     const geo = new BoxGeometry(1, 1, 1);
-    geo.translate(position.x, position.y, 1 * 0.5);
+    geo.translate(position.x, 10, position.y);
     const mat = new MeshBasicMaterial({ color: 0xfff000 });
     const mesh = new Mesh(geo, mat);
     this.mesh = mesh;
-
-    this.keyMap = {};
-
-    const onDocumentKey = (e) => {
-      this.keyMap[e.code] = e.type === 'keydown';
-    };
-
-    document.addEventListener('keydown', onDocumentKey, false);
-    document.addEventListener('keyup', onDocumentKey, false);
   }
 
-  Tick(delta) {
-    if (this.keyMap['KeyW'] || this.keyMap['ArrowUp']) {
-      this.mesh.translateY(delta * 25);
-    }
-
-    if (this.keyMap['KeyS'] || this.keyMap['ArrowDown']) {
-      this.mesh.translateY(-delta * 25);
-    }
-
-    if (this.keyMap['KeyA'] || this.keyMap['ArrowLeft']) {
-      this.mesh.translateX(-delta * 25);
-    }
-
-    if (this.keyMap['KeyD'] || this.keyMap['ArrowRight']) {
-      this.mesh.translateX(delta * 25);
-    }
+  /**
+   * @param {THREE.Vector2} coordinate
+   * */
+  SpawnAt(coordinate) {
+    this.mesh.translate(coordinate.x, 1 * 0.5, coordinate.y);
   }
 }
