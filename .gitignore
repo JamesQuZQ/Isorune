@@ -1,4 +1,17 @@
-node_modules/
 .DS_Store
+
+**/node_modules/
+
+*.zip
+assets/
+voxel-pack-updated/
+
+# Nix
 .envrc
 .direnv/
+
+
+# IDE
+.idea/
+.vscode/
+.vs/
