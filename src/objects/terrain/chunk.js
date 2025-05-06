@@ -32,7 +32,7 @@ export class Chunk {
     this.LOD = levelOfDetail;
 
     /** @type {Array<MeshFaces>}*/
-    this.meshFaces = new Array(10);
+    this.blockTypeMeshFaces = new Array(10);
 
     this.vector3Buffer = new Vector3();
   }
@@ -62,13 +62,13 @@ export class Chunk {
     const maxZ = Terrain.TERRAIN_CHUNk_HEIGHT;
 
     const _getOrCreateMeshFace = (blockType) => {
-      let chunkFaces = this.meshFaces[blockType];
-      if (chunkFaces) {
-        return chunkFaces;
+      let blockMeshFaces = this.blockTypeMeshFaces[blockType];
+      if (blockMeshFaces) {
+        return blockMeshFaces;
       }
 
       try {
-        const voxelInfo = biome.GetVoxel(blockType);
+        const voxelInfo = biome.GetBlock(blockType);
         if (!voxelInfo) {
           console.warn(
             `No biome voxel info found for block type: ${blockType}`,
@@ -76,14 +76,14 @@ export class Chunk {
         }
 
         if (voxelInfo.IsTransparent()) {
-          chunkFaces = new TransparentFaces(material, voxelInfo);
-          this.meshFaces[blockType] = chunkFaces;
+          blockMeshFaces = new TransparentFaces(material, voxelInfo);
+          this.blockTypeMeshFaces[blockType] = blockMeshFaces;
         } else {
-          chunkFaces = new MeshFaces(material, voxelInfo);
-          this.meshFaces[blockType] = chunkFaces;
+          blockMeshFaces = new MeshFaces(material, voxelInfo);
+          this.blockTypeMeshFaces[blockType] = blockMeshFaces;
         }
 
-        return chunkFaces;
+        return blockMeshFaces;
       } catch (error) {
         console.error(error);
       }
@@ -121,12 +121,24 @@ export class Chunk {
       }
     }
 
-    this.meshFaces = this.meshFaces.filter((x) => x != null);
-    this.meshFaces.forEach((mesh) => {
+    this.blockTypeMeshFaces = this.blockTypeMeshFaces.filter((x) => x != null);
+    this.blockTypeMeshFaces.forEach((mesh) => {
       mesh.FinalizeMeshFace();
     });
-    this.meshes = this.meshFaces.flatMap(
+  }
+
+  ToInstanceMesh() {
+    return this.blockTypeMeshFaces.flatMap(
       (/** @type {MeshFaces}*/ mf) => mf.meshFacesInstace,
     );
+  }
+
+  Dispose() {
+    this.coordinate = null;
+    this.size = null;
+    this.edge = null;
+    this.LOD = null;
+    this.vector3Buffer = null;
+    this.blockTypeMeshFaces = null;
   }
 }

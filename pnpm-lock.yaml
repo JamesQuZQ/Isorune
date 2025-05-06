@@ -8,12 +8,12 @@ importers:
 
   .:
     dependencies:
+      alea:
+        specifier: ^1.0.1
+        version: 1.0.1
       simplex-noise:
         specifier: ^4.0.3
         version: 4.0.3
-      stats.js:
-        specifier: ^0.17.0
-        version: 0.17.0
       three:
         specifier: ^0.174.0
         version: 0.174.0
@@ -39,6 +39,9 @@ importers:
       lil-gui:
         specifier: ^0.20.0
         version: 0.20.0
+      stats.js:
+        specifier: ^0.17.0
+        version: 0.17.0
       vite:
         specifier: ^6.2.1
         version: 6.2.1
@@ -390,6 +393,9 @@ packages:
 
   ajv@6.12.6:
     resolution: {integrity: sha512-j3fVLgvTo527anyYyJOGTYJbG+vnnQYvE0m5mmkc1TK+nxAppkCLMIL0aZ4dblVCNoGShhm+kzE4ZUykBoMg4g==}
+
+  alea@1.0.1:
+    resolution: {integrity: sha512-QU+wv+ziDXaMxRdsQg/aH7sVfWdhKps5YP97IIwFkHCsbDZA3k87JXoZ5/iuemf4ntytzIWeScrRpae8+lDrXA==}
 
   ansi-regex@5.0.1:
     resolution: {integrity: sha512-quJQXlTSUGL2LH9SUXo8VwsY4soanhgo6LNSm84E1LBcE8s3O0wpdiRzyR9z/ZZJMlMWv37qOOb9pdJlMUEKFQ==}
@@ -1603,6 +1609,8 @@ snapshots:
       fast-json-stable-stringify: 2.1.0
       json-schema-traverse: 0.4.1
       uri-js: 4.4.1
+
+  alea@1.0.1: {}
 
   ansi-regex@5.0.1: {}
 

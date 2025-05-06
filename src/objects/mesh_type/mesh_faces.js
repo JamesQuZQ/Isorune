@@ -1,5 +1,5 @@
 import { InstancedMesh, Matrix4, StaticDrawUsage } from 'three';
-import Voxel, { VoxelType, VoxelFace } from '@/objects/voxel';
+import Block, { BlockType, VoxelFace } from '@/objects/blocks';
 import { Terrain, Chunk } from '@/objects/terrain';
 
 export default class MeshFaces {
@@ -9,7 +9,7 @@ export default class MeshFaces {
 
     this.material = material;
 
-    /** @type {Voxel}*/
+    /** @type {Block}*/
     this.voxel = voxelDefinition;
 
     this.matrix4buffer = new Matrix4();
@@ -29,6 +29,10 @@ export default class MeshFaces {
 
     const voxelFace = this.voxel.GetFace(face, size);
     const mesh = new InstancedMesh(voxelFace, this.material, count);
+
+    mesh.castShadow = false;
+    mesh.receiveShadow = true;
+
     mesh.instanceMatrix.setUsage(StaticDrawUsage);
 
     return (this.meshFacesInstace[face] = mesh);
@@ -57,11 +61,11 @@ export default class MeshFaces {
       const neighborBlock = blocks.get(neighborKey);
       const neighborBlockType = neighborBlock
         ? neighborBlock.type
-        : VoxelType.AIR;
+        : BlockType.AIR;
 
       return (
-        neighborBlockType === VoxelType.AIR ||
-        neighborBlockType === VoxelType.WATER
+        neighborBlockType === BlockType.AIR ||
+        neighborBlockType === BlockType.WATER
       );
     };
 
