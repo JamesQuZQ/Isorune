@@ -1,25 +1,25 @@
 import { BLOCkS } from '@/game_config/block';
 import ThreeHelper from '@/utils/three_helper';
-import Voxel, { VoxelFace, VoxelType } from '@/objects/voxel';
+import Block, { VoxelFace, BlockType } from '@/objects/blocks';
 
 /** @import { Terrain } from '@/objects/terrain/terrain'*/
 
 export default class Biome {
   voxels = new Array(10);
   constructor() {
-    this.#CreateWorldVoxel();
+    this.#CreateWorldBlock();
   }
 
   /**
-   * @param {VoxelType} type
+   * @param {BlockType} type
    *
-   * @returns {Voxel}
+   * @returns {Block}
    * */
-  GetVoxel(type) {
+  GetBlock(type) {
     return this.voxels[type];
   }
 
-  #CreateWorldVoxel() {
+  #CreateWorldBlock() {
     const {
       tileSize,
       atlasWidth,
@@ -31,10 +31,10 @@ export default class Biome {
       snow,
     } = BLOCkS;
 
-    const CreateVoxel = (type, texture) => {
+    const CreateBlock = (type, texture) => {
       if (this.voxels[type] != null) return;
 
-      const voxel = new Voxel(type);
+      const voxel = new Block(type);
       voxel.SetAllFacesUVCoordinate(
         ThreeHelper.GetUVFromSubTexture(
           texture,
@@ -49,7 +49,7 @@ export default class Biome {
     const CreateVoxelWithTop = (type, sideTexture, topTexture) => {
       if (this.voxels[type] != null) return;
 
-      const voxel = new Voxel(type);
+      const voxel = new Block(type);
       voxel.SetUVCoordinate(
         VoxelFace.TOP,
         ThreeHelper.GetUVFromSubTexture(
@@ -73,11 +73,11 @@ export default class Biome {
       this.voxels[type] = voxel;
     };
 
-    CreateVoxel(VoxelType.SAND, sand);
-    CreateVoxel(VoxelType.SOIL, dirt);
-    CreateVoxel(VoxelType.WATER, water);
-    CreateVoxelWithTop(VoxelType.GRASS, grass.side, grass.top);
-    CreateVoxelWithTop(VoxelType.SNOW_DIRT, snow.dirt, snow.top);
-    CreateVoxelWithTop(VoxelType.SNOW_ROCk, snow.rock, snow.top);
+    CreateBlock(BlockType.SAND, sand);
+    CreateBlock(BlockType.SOIL, dirt);
+    CreateBlock(BlockType.WATER, water);
+    CreateVoxelWithTop(BlockType.GRASS, grass.side, grass.top);
+    CreateVoxelWithTop(BlockType.SNOW_DIRT, snow.dirt, snow.top);
+    CreateVoxelWithTop(BlockType.SNOW_ROCk, snow.rock, snow.top);
   }
 }

@@ -8,7 +8,7 @@ import { PlaneGeometry } from 'three';
  * @memberof Voxel
  * @enum {number}
  */
-export const VoxelType = {
+export const BlockType = {
   WATER: 0,
   SAND: 1,
   SOIL: 2,
@@ -27,9 +27,9 @@ export const VoxelFace = {
   RIGHT: 4,
 };
 
-export default class Voxel {
+export default class Block {
   /**
-   * @param {VoxelType} type
+   * @param {BlockType} type
    * */
   constructor(type) {
     this.type = type;
@@ -55,7 +55,7 @@ export default class Voxel {
   }
 
   IsTransparent() {
-    return this.type == VoxelType.AIR || this.type == VoxelType.WATER;
+    return this.type == BlockType.AIR || this.type == BlockType.WATER;
   }
 
   /**
@@ -93,7 +93,7 @@ export default class Voxel {
    * */
   SetUVCoordinate(face, uvAttribute) {
     if (this.faces[face] != null) {
-      Voxel.SetUV(this.faces[face], uvAttribute);
+      Block.SetUV(this.faces[face], uvAttribute);
     }
   }
 

@@ -1,7 +1,7 @@
 import { Chunk } from '@/objects/terrain';
 import { Noise } from '@/logics/noise';
 import Biome from '@/objects/biome';
-import { VoxelType } from '@/objects/voxel';
+import { BlockType } from '@/objects/blocks';
 
 import { MeshLambertMaterial, DoubleSide } from 'three';
 
@@ -28,16 +28,16 @@ export class Terrain {
 
   /** @type {import('@/logics/noise').NoiseProps} noiseConfig*/
   noiseConfig = {
-    octaves: 15,
-    scale: 350,
-    persistant: 10,
-    exponentiation: 5,
-    lacunarity: 100,
+    octaves: 8,
+    scale: 800,
+    persistant: 100,
+    exponentiation: 3,
+    lacunarity: 150,
   };
 
   static TERRAIN_CHUNk_LIMIT = 160;
-  static TERRAIN_CHUNk_HEIGHT = 250;
-  static SEA_LEVEL = 2;
+  static TERRAIN_CHUNk_HEIGHT = 400;
+  static SEA_LEVEL = 1;
   static DEFAULT_LOD = 4;
 
   GetChunk(coordinate) {
@@ -52,6 +52,7 @@ export class Terrain {
     this.heightNoise = new Noise();
 
     this.material = new MeshLambertMaterial({
+      wireframe: true,
       map: texture,
       side: DoubleSide,
       alphaTest: 0.1,
@@ -75,7 +76,7 @@ export class Terrain {
 
     /**
      * @param {string} key
-     * @param {VoxelType} voxelType
+     * @param {BlockType} voxelType
      * */
     const updateTerrainInfo = (key, voxelType) => {
       this.#blocks.set(key, { type: voxelType });
@@ -88,16 +89,18 @@ export class Terrain {
             Terrain.TERRAIN_CHUNk_HEIGHT,
         );
 
+        // const blockHeight = 1;
+
         for (let z = 0; z <= blockHeight; z += size) {
           const key = `${x},${z},${y}`;
           if (this.#blocks.has(key)) continue;
 
           if (z < 2 * size) {
-            updateTerrainInfo(key, VoxelType.SOIL);
+            updateTerrainInfo(key, BlockType.SOIL);
           } else if (z < 3 * size) {
-            updateTerrainInfo(key, VoxelType.SAND);
+            updateTerrainInfo(key, BlockType.SAND);
           } else if (z > 3) {
-            updateTerrainInfo(key, VoxelType.GRASS);
+            updateTerrainInfo(key, BlockType.GRASS);
           }
         }
 
@@ -108,7 +111,7 @@ export class Terrain {
           if (z > blockHeight) {
             const key = `${x},${z},${y}`;
             if (this.#blocks.has(key)) continue;
-            updateTerrainInfo(key, VoxelType.WATER);
+            updateTerrainInfo(key, BlockType.WATER);
           }
         }
       }
@@ -150,10 +153,12 @@ export class Terrain {
 
     await chunk.CreateAsync(this.#blocks, this.material, this.biome);
 
-    chunk.meshes.forEach((mesh) => {
+    chunk.ToInstanceMesh().forEach((mesh) => {
       addToApp(mesh);
     });
 
     this.rendered = true;
   }
+
+  DisposeChunk(chunk) {}
 }

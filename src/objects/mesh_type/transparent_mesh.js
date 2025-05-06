@@ -1,5 +1,5 @@
 import MeshFaces from '@/objects/mesh_type/mesh_faces';
-import { VoxelFace, VoxelType } from '@/objects/voxel';
+import { VoxelFace, BlockType } from '@/objects/blocks';
 import { Terrain } from '@/objects/terrain/terrain';
 
 export default class TransparentFaces extends MeshFaces {
@@ -51,9 +51,9 @@ export default class TransparentFaces extends MeshFaces {
       const neighborBlock = blocks.get(neighborKey);
       const neighborBlockType = neighborBlock
         ? neighborBlock.type
-        : VoxelType.AIR;
+        : BlockType.AIR;
 
-      return neighborBlockType !== VoxelType.WATER;
+      return neighborBlockType !== BlockType.WATER;
     };
 
     this.matrix4buffer.makeTranslation(x, z, y);
