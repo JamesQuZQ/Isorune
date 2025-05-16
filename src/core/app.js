@@ -1,10 +1,16 @@
 import { Bootstrap } from '@/core/bootstrap';
 import { Loop } from '@/core/loop';
 import { ControlService } from '@/logics/control';
+import { ProjectileFactory } from '@/objects/projectile_factory';
+import { PlaneControl } from '@/logics/plane_control';
+import { PlayerInteractionControl } from '@/logics/player_interaction_control';
 import { Character } from '@/objects/character/character';
+import { PlaneFactory } from '@/objects/plane_factory';
 import { Terrain } from '@/objects/terrain/terrain';
 import { Debugger } from '@/tools/debugger';
-import { AmbientLight, Vector2 } from 'three';
+import { AmbientLight, Vector2, Vector3, DirectionalLight, Mesh, BoxGeometry, MeshStandardMaterial } from 'three';
+import { ProjectileControl } from '@/logics/projectile_control';
+
 
 /** @import { Scene, WebGLRenderer, Camera, Mesh, Object3D  } from 'three'; */
 /** @import { Bootstrap } from '@/core/bootstrap'; */
@@ -73,8 +79,25 @@ export class App {
     const character = new Character(new Vector2(5, 5));
     await this.AddMeshAsync(character);
 
-    const controlSrv = new ControlService(terrain, character, this);
-    this.loop.Add(controlSrv);
+    this.planeFactory = new PlaneFactory(this);
+    await this.planeFactory.createPlayer("1");
+
+    this.planeCtrl = new PlaneControl(this);
+    for (let i = 0; i < 10; i++){
+      await this.planeCtrl.generatePlane();
+    }
+    this.loop.Add(this.planeCtrl);
+
+    this.projectileFactory = new ProjectileFactory(this);
+    this.projectileCtrl = new ProjectileControl(this);
+    this.loop.Add(this.projectileCtrl);
+
+    // const controlSrv = new ControlService(terrain, character, this);
+    // this.loop.Add(controlSrv);
+
+    this.playerCtrl = new PlayerInteractionControl(this, terrain);
+    this.loop.Add(this.playerCtrl);
+
   }
 
   AddObject(object) {
