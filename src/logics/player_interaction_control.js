@@ -8,8 +8,8 @@ const SPEED_INCREMENT = 0.03; // Adjust as needed
 const MAX_SPEED = 0.3;
 export const MIN_SPEED = 0.02 * 0.1;
 
-const ROLL_INCREMENT = 0.0015 / 2;
-const YAW_INCREMENT = 0.001 / 2;
+const ROLL_INCREMENT = 0.0015;
+const YAW_INCREMENT = 0.001;
 const PITCH_INCREMENT = 0.001 / 2;
 
 const x = new Vector3(1, 0, 0);
