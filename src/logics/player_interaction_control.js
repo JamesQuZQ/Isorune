@@ -61,11 +61,6 @@ export class PlayerInteractionControl {
             this.app.player.matrixAutoUpdate = true;
         }
 
-        const addChunkToApp = (object) => this.app.AddAsync(object.group);
-        const removeChunkFromApp = (object) => this.app.DisposeObject(object.group);
-
-
-
         // --- Speed Control ---
         // Note: How 'speed' is used depends on your movement logic elsewhere.
         // Applying delta here might make sense depending on how you use player.speed
