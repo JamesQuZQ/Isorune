@@ -57,22 +57,22 @@ export class Bootstrap {
     const camera = new THREE.PerspectiveCamera(
       50,
       window.innerWidth / window.innerHeight,
-      0.1,
+      0.001,
       1000,
     );
-    // const camera = new THREE.OrthographicCamera(-50, 50, 50, -50, 0.1, 1000);
+    //const camera = new THREE.OrthographicCamera(-50, 50, 50, -50, 0.1, 1000);
     // camera.position.set(60, 40, -40);
     camera.position.set(0, 50, -50);
 
-    // const cameraFolder = this.debugger.addFolder('Camera');
-    //
-    // cameraFolder.add(camera.position, 'x', -100, 100);
-    // cameraFolder.add(camera.position, 'y', -100, 100);
-    // cameraFolder.add(camera.position, 'z', -100, 100);
-    //
-    // cameraFolder.open();
+    const cameraFolder = this.debugger.addFolder('Camera');
+    
+    cameraFolder.add(camera.position, 'x', -100, 100);
+    cameraFolder.add(camera.position, 'y', -100, 100);
+    cameraFolder.add(camera.position, 'z', -100, 100);
+    
+    cameraFolder.open();
 
-    // camera.updateProjectionMatrix();
+    camera.updateProjectionMatrix();
 
     return camera;
   }

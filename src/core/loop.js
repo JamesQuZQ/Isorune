@@ -67,7 +67,9 @@ export class Loop {
   }
 
   /** TODO: remove object in updateables after event
-   * @param {Object} object_index - the object to remove from updateables
+   * @param {Object} object - the object to remove from updateables
    */
-  Remove(object_index) {}
+  Remove(object) {
+    this.#updateables = this.#updateables.filter(item => item !== object);
+  }
 }
