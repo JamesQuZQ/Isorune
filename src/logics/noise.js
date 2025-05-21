@@ -1,4 +1,5 @@
-import { SimplexNoise } from 'three/examples/jsm/Addons.js';
+import { createNoise2D } from 'simplex-noise';
+import Alea from 'alea';
 
 //NOTE: This Noice class not only help me to create terrain surface but also can build world contents
 
@@ -19,7 +20,10 @@ import { SimplexNoise } from 'three/examples/jsm/Addons.js';
 
 export class Noise {
   constructor() {
-    this.seed = new SimplexNoise();
+    const procedural_random_generator = Alea('my-seed');
+
+    /** @type {Function<NoiseFunction2D>}*/
+    this.noise = new createNoise2D(procedural_random_generator);
   }
 
   /**
@@ -36,7 +40,8 @@ export class Noise {
     let frequency = 1;
     let normalization = 0;
     for (let octave = 0; octave < property.octaves; octave++) {
-      const noiseValue = this.seed.noise(xoff * frequency, yoff * frequency) * 0.5 + 0.5;
+      const noiseValue =
+        this.noise(xoff * frequency, yoff * frequency) * 0.5 + 0.5;
       total += noiseValue * amplitude;
       normalization += amplitude;
       amplitude *= 2.0 ** -property.persistant;

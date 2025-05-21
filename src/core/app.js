@@ -1,5 +1,6 @@
 import { Bootstrap } from '@/core/bootstrap';
 import { Loop } from '@/core/loop';
+
 import { ControlService } from '@/logics/control';
 import { ProjectileFactory } from '@/objects/projectile_factory';
 import { PlaneControl } from '@/logics/plane_control';
@@ -12,7 +13,7 @@ import { AmbientLight, Vector2, Vector3, DirectionalLight, Mesh, BoxGeometry, Me
 import { ProjectileControl } from '@/logics/projectile_control';
 
 
-/** @import { Scene, WebGLRenderer, Camera, Mesh, Object3D  } from 'three'; */
+/** @import { Scene  } from 'three'; */
 /** @import { Bootstrap } from '@/core/bootstrap'; */
 
 /** Apply Singleton Pattern
@@ -32,14 +33,12 @@ export class App {
       return App._instance;
     }
 
-    App._instance = this;
-    this.entities = [];
     this.state = 0;
   }
 
-  get instance() {
-    if (typeof App._instance == 'undefined') {
-      throw new Error('The App has not been instanciate yet');
+  static get instance() {
+    if (typeof App._instance === 'undefined') {
+      App._instance = new App();
     }
 
     return App._instance;
@@ -59,10 +58,13 @@ export class App {
   }
 
   async InitAsync() {
-    App._instance = new App();
-
     this.debugger = new Debugger();
-    this.config = new Bootstrap(this.debugger);
+
+    const bootstrap = new Bootstrap(this.debugger);
+    await bootstrap.InitTexture();
+
+    this.config = bootstrap;
+
     this.loop = new Loop(this.renderer, this.scene, this.camera);
     window.addEventListener('resize', this.config.OnWindowResize, false);
 
@@ -71,13 +73,12 @@ export class App {
   }
 
   async StartAsync() {
-    this.loop.Start(this.Render);
+    this.loop.Start();
 
-    const terrain = new Terrain(this.debugger);
-    await terrain.InitTextureAsync();
+    const terrain = new Terrain(this.debugger, this.config.texture);
 
-    const character = new Character(new Vector2(5, 5));
-    await this.AddMeshAsync(character);
+    const character = new Character(new Vector2(75, 75));
+    this.AddObject(character.mesh);
 
     this.planeFactory = new PlaneFactory(this);
     await this.planeFactory.createPlayer("1");
@@ -98,26 +99,16 @@ export class App {
     this.playerCtrl = new PlayerInteractionControl(this, terrain);
     this.loop.Add(this.playerCtrl);
 
+    // const controlSrv = new ControlService(terrain, character, this);
+    // this.AddToLoop(controlSrv);
+  }
+
+  AddToLoop(object) {
+    this.loop.Add(object);
   }
 
   AddObject(object) {
     this.scene.add(object);
-  }
-
-  AddMesh(object) {
-    this.scene.add(object.mesh);
-  }
-
-  async AddMeshAsync(object) {
-    this.loop.Add(object);
-    this.scene.add(object.mesh);
-    this.entities.push(object);
-  }
-
-  async AddAsync(object) {
-    this.loop.Add(object);
-    this.scene.add(object);
-    this.entities.push(object);
   }
 
   /** Dispose Object in the scene
@@ -127,11 +118,6 @@ export class App {
     this.scene.remove(object);
     this.loop.Remove(object);
     this.renderer.renderLists.dispose();
-  }
-
-  Render() {
-    this.renderer.render(this.scene, this.camera);
-    this.config.stats;
   }
 
   Stop() {

@@ -12,20 +12,18 @@ import { App } from '@/core/app';
  * */
 export class Loop {
   #updateables;
-  #postRenderProcesses;
-  #preRenderProcesses;
 
   constructor() {
-    const app = new App();
+    const app = App.instance;
     this.camera = app.camera;
+    /** @type {Scene}*/
     this.scene = app.scene;
+    /** @type {WebGLRenderer}*/
     this.renderer = app.renderer;
     this.stats = app.config.stats;
     this.clock = new Clock();
 
     this.#updateables = [];
-    this.#postRenderProcesses = [];
-    this.#preRenderProcesses = [];
   }
 
   /**
@@ -33,10 +31,9 @@ export class Loop {
    * */
   Start() {
     this.renderer.setAnimationLoop(async () => {
-      await this.Tick();
+      this.Tick();
       this.PreRender();
       this.renderer.render(this.scene, this.camera);
-      this.stats.update();
       this.PostRender();
     });
   }
@@ -45,20 +42,22 @@ export class Loop {
     this.renderer.setAnimationLoop(null);
   }
 
-  async Tick() {
+  Tick() {
     if (!this.#updateables) return;
 
     const delta = this.clock.getDelta();
 
-    this.#updateables.forEach(async (o) => {
-      if (o.Tick) await o.Tick(delta);
+    this.#updateables.forEach((o) => {
+      if (o.Tick) o.Tick(delta);
     });
   }
 
   PreRender() {}
 
   PostRender() {
-    // console.log(this.renderer.info.render.calls);
+    this.stats.update();
+    // console.log(this.renderer.info.render.triangles);
+    this.renderer.renderLists.dispose();
     this.renderer.info.reset();
   }
 

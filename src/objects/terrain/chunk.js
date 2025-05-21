@@ -1,128 +1,144 @@
-import { BoxGeometry, Group, Vector2 } from 'three';
-import { BlockTypeContainer } from '@/objects/terrain/container';
-
-/** @import { Noise } from '@/logics/noise'*/
-/** @import { Vector2 } from 'three'*/
+import { Matrix4, Vector2, Vector3 } from 'three';
+import MeshFaces from '@/objects/mesh_type/mesh_faces';
+import TransparentFaces from '@/objects/mesh_type/transparent_mesh';
+import { Terrain } from '@/objects/terrain';
+import Biome from '../biome';
 
 /**
  * @property {GeoContainer[]} blockTypes
  * @property {Vector2} edge
  * @property {number} size
  * @property {Group} group
+ * @property {Array.<MeshFaces>} meshFaces
  *
  * */
 export class Chunk {
-  static SNOW_HEIGHT = 40;
-  static MOUNTANTROCk_HEIGHT = 27;
-  static STONE_HEIGHT = 10;
-  static GRASS_HEIGHT = 3;
-  static SAND_HEIGHT = 0.4;
-  static SOIL_HEIGHT = 0;
-  static RIVER_HEIGHT = 0.2;
-
   /**
-   * @param {*} textures
-   * @param {Vector2} edge
+   * @param {Vector2} coordinate
    * @param {number} size
-   * @param {*} envmap
    * @param {number} levelOfDetail
    * */
-  constructor(textures, edge, size, envmap, levelOfDetail) {
-    this.coordinate = new Vector2().copy(edge);
+  constructor(coordinate, size, levelOfDetail) {
+    this.coordinate = new Vector2().copy(coordinate);
     this.size = size;
-    this.edge = new Vector2(edge.x * size, edge.y * size);
-    this.LOD = levelOfDetail;
-    this.#InitBlockTypes(textures, envmap);
-    this.group = new Group();
-  }
-
-  #InitBlockTypes(textures, envmap) {
-    this.blockTypes = {
-      grass: new BlockTypeContainer(textures['grass']),
-      rock: new BlockTypeContainer(textures['mountantRock']),
-      stone: new BlockTypeContainer(textures['rock']),
-      snow: new BlockTypeContainer(textures['snow']),
-      soil: new BlockTypeContainer(textures['soil']),
-      sand: new BlockTypeContainer(textures['sand']),
+    this.edge = {
+      maxEdge: new Vector2(
+        coordinate.x * this.size + this.size,
+        coordinate.y * this.size + this.size,
+      ),
+      minEdge: new Vector2(coordinate.x * this.size, coordinate.y * this.size),
     };
+
+    this.LOD = levelOfDetail;
+
+    /** @type {Array<MeshFaces>}*/
+    this.blockTypeMeshFaces = new Array(10);
+
+    this.vector3Buffer = new Vector3();
   }
 
   /**
-   * @param {Noise} noise - The Noise seed
-   * @param {NoiseConfig} noiseProps
-   * @param {number} max_height
+   * @param {*} blocks
+   * @param {*} material
+   * @param {Biome} biome
    * */
-  async CreateAsync(noise, noiseProps, max_height) {
-    for (
-      let y = this.coordinate.y * this.size;
-      y < this.coordinate.y * this.size + this.size;
-      y += this.LOD
-    ) {
-      for (
-        let x = this.coordinate.x * this.size;
-        x < this.coordinate.x * this.size + this.size;
-        x += this.LOD
-      ) {
-        const height = Math.floor(noise.Get2D(x, y, noiseProps) * max_height);
-        for (let z = 0; z <= height; z++) {
-          const block_geo = new BoxGeometry(1 * this.LOD, 1, 1 * this.LOD);
+  async CreateAsync(blocks, material, biome) {
+    const workerData = {
+      chunk: this,
+      blocks: blocks,
+      biome: biome,
+      buffer: this.matrix4Buffer,
+    };
 
-          block_geo.translate(x + this.LOD * 0.5, z * 0.5, y + this.LOD * 0.5);
+    const size = this.LOD;
 
-          if (Chunk.SNOW_HEIGHT < height) this.blockTypes.snow.Merge(block_geo);
-          else if (Chunk.MOUNTANTROCk_HEIGHT < height)
-            this.blockTypes.rock.Merge(block_geo);
-          else if (Chunk.STONE_HEIGHT < height)
-            this.blockTypes.stone.Merge(block_geo);
-          else if (Chunk.GRASS_HEIGHT < height)
-            this.blockTypes.grass.Merge(block_geo);
-          else if (Chunk.SAND_HEIGHT < height)
-            this.blockTypes.sand.Merge(block_geo);
-          else if (Chunk.SOIL_HEIGHT <= height)
-            this.blockTypes.soil.Merge(block_geo);
+    const edge = this.edge;
+    const minX = edge.minEdge.x;
+    const maxX = edge.maxEdge.x;
+    const minY = edge.minEdge.y;
+    const maxY = edge.maxEdge.y;
 
-          block_geo.dispose();
+    const minZ = 0;
+    const maxZ = Terrain.TERRAIN_CHUNk_HEIGHT;
+
+    const _getOrCreateMeshFace = (blockType) => {
+      let blockMeshFaces = this.blockTypeMeshFaces[blockType];
+      if (blockMeshFaces) {
+        return blockMeshFaces;
+      }
+
+      try {
+        const voxelInfo = biome.GetBlock(blockType);
+        if (!voxelInfo) {
+          console.warn(
+            `No biome voxel info found for block type: ${blockType}`,
+          );
+        }
+
+        if (voxelInfo.IsTransparent()) {
+          blockMeshFaces = new TransparentFaces(material, voxelInfo);
+          this.blockTypeMeshFaces[blockType] = blockMeshFaces;
+        } else {
+          blockMeshFaces = new MeshFaces(material, voxelInfo);
+          this.blockTypeMeshFaces[blockType] = blockMeshFaces;
+        }
+
+        return blockMeshFaces;
+      } catch (error) {
+        console.error(error);
+      }
+    };
+
+    for (let y = minY; y < maxY; y += size) {
+      for (let x = minX; x < maxX; x += size) {
+        for (let z = minZ; z <= maxZ; z += size) {
+          const key = `${x},${z},${y}`;
+          if (!blocks.has(key)) {
+            continue;
+          }
+
+          const blockData = blocks.get(key);
+          if (!blockData || typeof blockData.type === 'undefined') {
+            console.warn(`Voxel data missing or invalid type at key: ${key}`);
+            continue;
+          }
+
+          const blockType = blockData.type;
+
+          /**@type {MeshFaces}*/
+          const chunkFaces = _getOrCreateMeshFace(blockType);
+
+          try {
+            await chunkFaces.BuildMeshFacesAsync(
+              this.vector3Buffer.set(x, y, z),
+              blocks,
+              this,
+            );
+          } catch (error) {
+            console.log(error);
+          }
         }
       }
     }
 
-    return this;
+    this.blockTypeMeshFaces = this.blockTypeMeshFaces.filter((x) => x != null);
+    this.blockTypeMeshFaces.forEach((mesh) => {
+      mesh.FinalizeMeshFace();
+    });
   }
 
-  async BuildAsync() {
-    for (const [_, value] of Object.entries(this.blockTypes)) {
-      /** @type {BlockTypeContainer} geoContainer*/
-      const geoContainer = await value.BuildAsync();
-      this.group.add(geoContainer.mesh);
-    }
-
-    return this;
-  }
-
-  /**
-   * @param {Vector3} vector3
-   *
-   * @returns {boolean}
-   * */
-  IsInBounding(vector3) {
-    return !(
-      vector3.x < this.coordinate.x * this.size + this.size &&
-      this.coordinate.x * this.size > vector3.x
+  ToInstanceMesh() {
+    return this.blockTypeMeshFaces.flatMap(
+      (/** @type {MeshFaces}*/ mf) => mf.meshFacesInstace,
     );
   }
 
   Dispose() {
-    this.group.children.forEach((geo) => {
-      geo.material.dispose();
-      geo.geometry.dispose();
-    });
-  }
-
-  Hide() {
-    this.group.visible = false;
-  }
-
-  Show() {
-    this.group.visible = true;
+    this.coordinate = null;
+    this.size = null;
+    this.edge = null;
+    this.LOD = null;
+    this.vector3Buffer = null;
+    this.blockTypeMeshFaces = null;
   }
 }
