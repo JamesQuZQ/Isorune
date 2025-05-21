@@ -125,6 +125,7 @@ export class App {
    * */
   DisposeObject(object) {
     this.scene.remove(object);
+    this.loop.Remove(object);
     this.renderer.renderLists.dispose();
   }
 

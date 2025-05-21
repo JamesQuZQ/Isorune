@@ -1,11 +1,15 @@
 import { Vector3 } from "three";
 
+
 export class ProjectileControl {
 
     constructor(app) {
         this.app = app;
         this.projectiles = [];
-        
+    }
+
+    addProjectile(obj){
+        this.projectiles.push(obj)
     }
 
     async generatePlayerMissile(){
@@ -19,11 +23,13 @@ export class ProjectileControl {
     }
 
     async generatePlayerMachineGunBullet(){
-        await this.app.projectileFactory.createMachineGunBullet(this.app.player.position, this.app.player.speed * 10, this.app.player.rotation);
+        if (this.app.player.bulletNum > 0){
+            this.app.player.bulletNum --;
+            await this.app.projectileFactory.createMachineGunBullet(this.app.player.position, this.app.player.speed + 0.02, this.app.player.rotation);
+        }
     }
 
     async Tick(delta) {
-        
     }
 
     getRandomSpawnPosition(){

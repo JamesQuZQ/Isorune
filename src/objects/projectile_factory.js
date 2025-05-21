@@ -11,15 +11,8 @@ export class ProjectileFactory {
   }
 
 async createMachineGunBullet(position, speed, rotation) {
-  const bullet = new MachineGunBullet(position, rotation);
-  
-  bullet.mesh.speed = speed;
-
-  bullet.mesh.Tick = function () {
-    this.translateX(this.speed);
-  };
-
-  await this.app.AddAsync(bullet.mesh);
+  const bullet = new MachineGunBullet(position, speed, rotation, this.app);
+  await this.app.AddAsync(bullet);
 
 }
 
