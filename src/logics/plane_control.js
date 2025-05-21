@@ -19,6 +19,6 @@ export class PlaneControl {
     }
 
     getRandomSpawnPosition(){
-        return new Vector3(Math.random() * 5 + 1, 40, Math.random() * 2 - 1);
+        return new Vector3(Math.random() * 5 + 1, 200, Math.random() * 2 - 1);
     }
 }

@@ -77,11 +77,31 @@ export class App {
 
     const terrain = new Terrain(this.debugger, this.config.texture);
 
-    const character = new Character(new Vector2(75, 75));
-    this.AddObject(character.mesh);
+    // const character = new Character(new Vector2(75, 75));
+    // this.AddObject(character.mesh);
 
     this.planeFactory = new PlaneFactory(this);
-    await this.planeFactory.createPlayer("1");
+    // const player = await this.planeFactory.createPlayer("1")
+    // console.log(player);
+
+  this.planeFactory.createPlayer("1")
+  .then((player) => {
+    this.player = player;
+    const controlSrv = new ControlService(terrain, player, this);
+    this.AddObject(player);
+    this.AddToLoop(player);
+    this.AddToLoop(controlSrv);
+  })
+  .catch((error) => {
+    console.error("❌ Failed to create player:", error);
+    // Optionally show an alert or fallback:
+    // alert("Could not load player model.");
+  });
+
+
+    // this.app.player = object;
+    // this.app.AddObject(object);
+    // this.app.AddToLoop(object);
 
     this.planeCtrl = new PlaneControl(this);
     for (let i = 0; i < 10; i++){
@@ -99,8 +119,6 @@ export class App {
     this.playerCtrl = new PlayerInteractionControl(this, terrain);
     this.loop.Add(this.playerCtrl);
 
-    // const controlSrv = new ControlService(terrain, character, this);
-    // this.AddToLoop(controlSrv);
   }
 
   AddToLoop(object) {

@@ -52,7 +52,7 @@ export class Terrain {
     this.heightNoise = new Noise();
 
     this.material = new MeshLambertMaterial({
-      wireframe: true,
+      wireframe: false,
       map: texture,
       side: DoubleSide,
       alphaTest: 0.1,

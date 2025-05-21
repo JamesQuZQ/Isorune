@@ -1,11 +1,11 @@
 import { Vector2, Quaternion, Vector3, Matrix4 } from "three"; // Import Vector3
 import { Terrain } from '@/objects/terrain/terrain';
-import { ControlService } from '@/logics/control';
+import {ControlService} from '@/logics/control';
 
 
 // Constants for speeds (radians per second) are often clearer when using delta time
-const SPEED_INCREMENT = 0.01; // Adjust as needed
-const MAX_SPEED = 0.1;
+const SPEED_INCREMENT = 0.03; // Adjust as needed
+const MAX_SPEED = 0.3;
 export const MIN_SPEED = 0.02 * 0.1;
 
 const ROLL_INCREMENT = 0.0015 / 2;
@@ -174,54 +174,54 @@ export class PlayerInteractionControl {
             this.app.projectileCtrl.generatePlayerBomb();
         }
 
-        const charPos = new Vector3().copy(this.app.player.position);
-        const viewDistance = 1;
-        const currentChunkXCharOn = Math.round(charPos.x / Terrain.TERRAIN_CHUNk_LIMIT);
-        const currentChunkYCharOn = Math.round(charPos.z / Terrain.TERRAIN_CHUNk_LIMIT);
-        const charPos2 = new Vector2(charPos.x, charPos.z);
+        // const charPos = new Vector3().copy(this.app.player.position);
+        // const viewDistance = 1;
+        // const currentChunkXCharOn = Math.round(charPos.x / Terrain.TERRAIN_CHUNk_LIMIT);
+        // const currentChunkYCharOn = Math.round(charPos.z / Terrain.TERRAIN_CHUNk_LIMIT);
+        // const charPos2 = new Vector2(charPos.x, charPos.z);
 
-        const getLOD = (chunkEdge) => {
-            if (charPos2.distanceTo(chunkEdge) > 20) return 5;
-            else if (charPos2.distanceTo(chunkEdge) > 50) return 6;
-            else return 4;
-        };
+        // const getLOD = (chunkEdge) => {
+        //     if (charPos2.distanceTo(chunkEdge) > 20) return 5;
+        //     else if (charPos2.distanceTo(chunkEdge) > 50) return 6;
+        //     else return 4;
+        // };
 
-        if (this.lastPost.Tokey() != charPos.Tokey() || this.app.state == 0) {
-            /**
-             * Check the distance of the nearest edge of the chunk with
-             * character position if exceeded the Threshold then dispose it
-             * */
-            for (const chunk of this.terrain.chunks.values()) {
-                if (!this.viewable.has(chunk.coordinate.Tokey())) {
-                    if (charPos2.distanceTo(chunk.edge) >= ControlService.DISPOSE_CHUNk_THRESHOLD) {
-                        this.terrain.DisposeChunk(chunk, removeChunkFromApp);
-                    } else {
-                        chunk.Hide();
-                    }
-                } else {
-                    chunk.Show();
-                }
+        // if (this.lastPost.Tokey() != charPos.Tokey() || this.app.state == 0) {
+        //     /**
+        //      * Check the distance of the nearest edge of the chunk with
+        //      * character position if exceeded the Threshold then dispose it
+        //      * */
+        //     for (const chunk of this.terrain.chunks.values()) {
+        //         if (!this.viewable.has(chunk.coordinate.Tokey())) {
+        //             if (charPos2.distanceTo(chunk.edge) >= ControlService.DISPOSE_CHUNk_THRESHOLD) {
+        //                 this.terrain.DisposeChunk(chunk, removeChunkFromApp);
+        //             } else {
+        //                 chunk.Hide();
+        //             }
+        //         } else {
+        //             chunk.Show();
+        //         }
 
-                this.viewable.delete(chunk.coordinate.Tokey());
-            }
+        //         this.viewable.delete(chunk.coordinate.Tokey());
+        //     }
 
-            const vec2 = new Vector2();
-            for (let x = -viewDistance; x <= viewDistance; x++) {
-                for (let z = -viewDistance; z <= viewDistance; z++) {
-                    this.viewable.add(vec2.set(x + currentChunkXCharOn, z + currentChunkYCharOn).Tokey());
-                    this.viewedChunkCoordinate.set(x + currentChunkXCharOn, z + currentChunkYCharOn);
+        //     const vec2 = new Vector2();
+        //     for (let x = -viewDistance; x <= viewDistance; x++) {
+        //         for (let z = -viewDistance; z <= viewDistance; z++) {
+        //             this.viewable.add(vec2.set(x + currentChunkXCharOn, z + currentChunkYCharOn).Tokey());
+        //             this.viewedChunkCoordinate.set(x + currentChunkXCharOn, z + currentChunkYCharOn);
 
-                    if (this.terrain.chunks.has(this.viewedChunkCoordinate.Tokey())) {
-                    } else {
-                        await this.terrain.AppendChunkAsync(this.viewedChunkCoordinate, 4, addChunkToApp);
-                    }
-                }
-            }
+        //             if (this.terrain.chunks.has(this.viewedChunkCoordinate.Tokey())) {
+        //             } else {
+        //                 await this.terrain.AppendChunkAsync(this.viewedChunkCoordinate, 4, addChunkToApp);
+        //             }
+        //         }
+        //     }
 
-            this.app.state = 1;
-        }
+        //     this.app.state = 1;
+        // }
 
-        this.lastPost.copy(this.app.player.position);
+        // this.lastPost.copy(this.app.player.position);
     }
 
 }

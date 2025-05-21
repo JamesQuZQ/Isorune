@@ -7,16 +7,16 @@ import { Vector2, Vector3 } from '@/utils/vector_helper';
  * @import { Chunk } from '@/objects/terrain/chunk';
  */
 
-export default class ControlService {
+export class ControlService {
   static DISPOSE_CHUNk_THRESHOLD = Terrain.TERRAIN_CHUNk_LIMIT * 3;
-  static VIEW_DISTANCE = 1;
+  static VIEW_DISTANCE = 3;
 
   get characterPosition2() {
     return new Vector2(this.characterPosition.x, this.characterPosition.z);
   }
 
   get characterPosition() {
-    return new Vector3().copy(this.character.mesh.position);
+    return new Vector3().copy(this.character.position);
   }
 
   get currentChunkXCharOn() {
@@ -41,7 +41,8 @@ export default class ControlService {
     this.character = character;
     this.app = app;
 
-    this.character.mesh.matrixAutoUpdate = true;
+    console.log(this.character);
+    this.character.matrixAutoUpdate = true;
     this.keyMap = {};
 
     const onDocumentKey = (e) => {
@@ -51,7 +52,7 @@ export default class ControlService {
     document.addEventListener('keydown', onDocumentKey, false);
     document.addEventListener('keyup', onDocumentKey, false);
 
-    this.lastPost = new Vector3().clone(this.character.mesh.position);
+    this.lastPost = new Vector3().clone(this.character.position);
     this.viewedChunkCoordinate = new Vector2();
 
     this.viewable = new WeakSet();
@@ -66,21 +67,21 @@ export default class ControlService {
   removeChunkFromApp = (object) => this.app.DisposeObject(object);
 
   async Tick(delta) {
-    if (this.keyMap['KeyW'] || this.keyMap['ArrowUp']) {
-      this.character.mesh.translateZ(delta * 25);
-    }
+    // if (this.keyMap['KeyW'] || this.keyMap['ArrowUp']) {
+    //   this.character.mesh.translateZ(delta * 25);
+    // }
 
-    if (this.keyMap['KeyS'] || this.keyMap['ArrowDown']) {
-      this.character.mesh.translateZ(-delta * 25);
-    }
+    // if (this.keyMap['KeyS'] || this.keyMap['ArrowDown']) {
+    //   this.character.mesh.translateZ(-delta * 25);
+    // }
 
-    if (this.keyMap['KeyD'] || this.keyMap['ArrowLeft']) {
-      this.character.mesh.translateX(-delta * 25);
-    }
+    // if (this.keyMap['KeyD'] || this.keyMap['ArrowLeft']) {
+    //   this.character.mesh.translateX(-delta * 25);
+    // }
 
-    if (this.keyMap['KeyA'] || this.keyMap['ArrowRight']) {
-      this.character.mesh.translateX(delta * 25);
-    }
+    // if (this.keyMap['KeyA'] || this.keyMap['ArrowRight']) {
+    //   this.character.mesh.translateX(delta * 25);
+    // }
 
     /* NOTE:
      * Only Render when character move
@@ -107,7 +108,7 @@ export default class ControlService {
     }
 
     this.lastChunkCoordinate.copy(this.currentChunkCoordinate);
-    this.lastPost.copy(this.character.mesh.position);
+    this.lastPost.copy(this.character.position);
   }
 
   async CreateTerrainChunkOnCharacterPosition() {

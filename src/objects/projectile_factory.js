@@ -10,11 +10,11 @@ export class ProjectileFactory {
       this.app = app
   }
 
-async createMachineGunBullet(position, speed, rotation) {
-  const bullet = new MachineGunBullet(position, speed, rotation, this.app);
-  await this.app.AddAsync(bullet);
-
-}
+  async createMachineGunBullet(position, speed, rotation) {
+    const bullet = new MachineGunBullet(position, speed, rotation, this.app);
+    this.app.AddObject(bullet);
+    this.app.AddToLoop(bullet);
+  }
 
 
   async createMissile(missileNum, position, speed) {
@@ -47,9 +47,9 @@ async createMachineGunBullet(position, speed, rotation) {
         object.Tick = () => {
             //TODO: Implement Auto-tracking function
             object.translateY(object.speed);
-          }
-        this.app.AddAsync(object);
-        // console.log(object);
+        };
+        this.app.AddObject(object);
+        this.app.AddToLoop(object);
       },
       (xhr) => {
         console.log((xhr.loaded / xhr.total) * 100 + '% loaded for rocket');
@@ -90,8 +90,8 @@ async createMachineGunBullet(position, speed, rotation) {
         object.Tick = () => {
             object.translateZ(object.speed);
           }
-        this.app.AddAsync(object);
-        // console.log(object);
+        this.app.AddObject(object);
+        this.app.AddToLoop(object);
       },
       (xhr) => {
         console.log((xhr.loaded / xhr.total) * 100 + '% loaded for rocket');
