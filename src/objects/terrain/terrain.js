@@ -1,9 +1,9 @@
-import { Chunk } from '@/objects/terrain';
-import { Noise } from '@/logics/noise';
-import Biome from '@/objects/biome';
-import { BlockType } from '@/objects/blocks';
+import { Chunk } from "@/objects/terrain";
+import { Noise } from "@/logics/noise";
+import Biome from "@/objects/biome";
+import { BlockType } from "@/objects/blocks";
 
-import { MeshLambertMaterial, DoubleSide } from 'three';
+import { MeshLambertMaterial, DoubleSide } from "three";
 
 /**
  * @namespace Terrain
@@ -86,7 +86,7 @@ export class Terrain {
       for (let x = minX; x <= maxX; x += size) {
         const blockHeight = Math.floor(
           this.heightNoise.Get2D(x, y, this.noiseConfig) *
-            Terrain.TERRAIN_CHUNk_HEIGHT,
+            Terrain.TERRAIN_CHUNk_HEIGHT
         );
 
         // const blockHeight = 1;
@@ -104,16 +104,7 @@ export class Terrain {
           }
         }
 
-        /*
-         * Create SEA
-         * */
-        for (let z = 0; z <= Terrain.SEA_LEVEL * size; z += size) {
-          if (z > blockHeight) {
-            const key = `${x},${z},${y}`;
-            if (this.#blocks.has(key)) continue;
-            updateTerrainInfo(key, BlockType.WATER);
-          }
-        }
+        // Water block generation code removed - spaces will remain empty
       }
     }
   }
@@ -133,7 +124,7 @@ export class Terrain {
     const chunk = new Chunk(
       coordinate,
       Terrain.TERRAIN_CHUNk_LIMIT,
-      levelOfDetail,
+      levelOfDetail
     );
 
     await this.GenerateAsync(chunk);
@@ -161,4 +152,99 @@ export class Terrain {
   }
 
   DisposeChunk(chunk) {}
+
+  /**
+   * Get suitable positions for placing buildings on soil blocks
+   * @param {number} levelOfDetail - The level of detail (block size)
+   * @returns {Array<{position: Vector3, type: number}>} - Array of suitable block positions
+   */
+  getSoilBlocksForBuildings(levelOfDetail = this.DEFAULT_LOD) {
+    const soilBlocks = [];
+    const size = levelOfDetail;
+
+    // Define a border margin to avoid placing buildings near terrain edges
+    const borderMargin = 40; // Significant margin to stay away from borders
+
+    console.log(`Searching for soil blocks with LOD size: ${size}`);
+    console.log(`Total blocks in terrain: ${this.#blocks.size}`);
+
+    // Find the terrain boundaries
+    let minX = Infinity,
+      maxX = -Infinity;
+    let minY = Infinity,
+      maxY = -Infinity;
+
+    this.#blocks.forEach((blockInfo, key) => {
+      const [x, unused, y] = key.split(",").map(Number);
+      minX = Math.min(minX, x);
+      maxX = Math.max(maxX, x);
+      minY = Math.min(minY, y);
+      maxY = Math.max(maxY, y);
+    });
+
+    console.log(
+      `Terrain boundaries: X(${minX} to ${maxX}), Z(${minY} to ${maxY})`
+    );
+
+    // Find soil blocks that have nothing above them but are surrounded by soil on sides
+    // AND are not near the terrain borders
+    this.#blocks.forEach((blockData, key) => {
+      if (blockData.type === BlockType.SOIL) {
+        const [x, z, y] = key.split(",").map(Number);
+
+        // Skip blocks that are too close to the terrain borders
+        if (
+          x < minX + borderMargin ||
+          x > maxX - borderMargin ||
+          y < minY + borderMargin ||
+          y > maxY - borderMargin
+        ) {
+          return; // Skip this block
+        }
+
+        // Check if this block has no block above it (exposed top)
+        const blockAboveKey = `${x},${z + size},${y}`;
+        const hasNoBlockAbove = !this.#blocks.has(blockAboveKey);
+
+        if (hasNoBlockAbove) {
+          // Check if this block has soil neighbors on all 4 sides
+          const neighbors = [
+            `${x + size},${z},${y}`, // east
+            `${x - size},${z},${y}`, // west
+            `${x},${z},${y + size}`, // north
+            `${x},${z},${y - size}`, // south
+          ];
+
+          let soilNeighborCount = 0;
+          for (const neighborKey of neighbors) {
+            const neighborBlock = this.#blocks.get(neighborKey);
+            if (neighborBlock && neighborBlock.type === BlockType.SOIL) {
+              soilNeighborCount++;
+            }
+          }
+
+          // Only add blocks that have at least 3 soil neighbors
+          if (soilNeighborCount >= 3) {
+            // This is a good soil block for building - it's at the surface, has soil around it, and is far from borders
+            soilBlocks.push({
+              position: { x, y: z, z: y }, // Correct order for Three.js coordinates
+              type: blockData.type,
+            });
+
+            if (soilBlocks.length % 10 === 0) {
+              console.log(
+                `Found suitable soil block at: x=${x}, y=${z}, z=${y} (interior block with ${soilNeighborCount} soil neighbors)`
+              );
+            }
+          }
+        }
+      }
+    });
+
+    console.log(
+      `Found ${soilBlocks.length} suitable soil blocks (exposed top, surrounded sides, away from borders)`
+    );
+
+    return soilBlocks;
+  }
 }

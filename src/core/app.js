@@ -1,17 +1,26 @@
-import { Bootstrap } from '@/core/bootstrap';
-import { Loop } from '@/core/loop';
+import { Bootstrap } from "@/core/bootstrap";
+import { Loop } from "@/core/loop";
 
-import { ControlService } from '@/logics/control';
-import { ProjectileFactory } from '@/objects/projectile_factory';
-import { PlaneControl } from '@/logics/plane_control';
-import { PlayerInteractionControl } from '@/logics/player_interaction_control';
-import { Character } from '@/objects/character/character';
-import { PlaneFactory } from '@/objects/plane_factory';
-import { Terrain } from '@/objects/terrain/terrain';
-import { Debugger } from '@/tools/debugger';
-import { AmbientLight, Vector2, Vector3, DirectionalLight, Mesh, BoxGeometry, MeshStandardMaterial } from 'three';
-import { ProjectileControl } from '@/logics/projectile_control';
-
+import { ControlService } from "@/logics/control";
+import { ProjectileFactory } from "@/objects/projectile_factory";
+import { PlaneControl } from "@/logics/plane_control";
+import { PlayerInteractionControl } from "@/logics/player_interaction_control";
+import { Character } from "@/objects/character/character";
+import { PlaneFactory } from "@/objects/plane_factory";
+import { BuildingFactory } from "@/objects/building_factory";
+import { BuildingControl } from "@/logics/building_control";
+import { Terrain } from "@/objects/terrain/terrain";
+import { Debugger } from "@/tools/debugger";
+import {
+  AmbientLight,
+  Vector2,
+  Vector3,
+  DirectionalLight,
+  Mesh,
+  BoxGeometry,
+  MeshStandardMaterial,
+} from "three";
+import { ProjectileControl } from "@/logics/projectile_control";
 
 /** @import { Scene  } from 'three'; */
 /** @import { Bootstrap } from '@/core/bootstrap'; */
@@ -37,7 +46,7 @@ export class App {
   }
 
   static get instance() {
-    if (typeof App._instance === 'undefined') {
+    if (typeof App._instance === "undefined") {
       App._instance = new App();
     }
 
@@ -66,7 +75,7 @@ export class App {
     this.config = bootstrap;
 
     this.loop = new Loop(this.renderer, this.scene, this.camera);
-    window.addEventListener('resize', this.config.OnWindowResize, false);
+    window.addEventListener("resize", this.config.OnWindowResize, false);
 
     const amlight = new AmbientLight(0xffffff, 1);
     this.AddObject(amlight);
@@ -84,41 +93,53 @@ export class App {
     // const player = await this.planeFactory.createPlayer("1")
     // console.log(player);
 
-  this.planeFactory.createPlayer("1")
-  .then((player) => {
-    this.player = player;
-    const controlSrv = new ControlService(terrain, player, this);
-    this.AddObject(player);
-    this.AddToLoop(player);
-    this.AddToLoop(controlSrv);
-  })
-  .catch((error) => {
-    console.error("❌ Failed to create player:", error);
-    // Optionally show an alert or fallback:
-    // alert("Could not load player model.");
-  });
-
+    this.planeFactory
+      .createPlayer("1")
+      .then((player) => {
+        this.player = player;
+        const controlSrv = new ControlService(terrain, player, this);
+        this.AddObject(player);
+        this.AddToLoop(player);
+        this.AddToLoop(controlSrv);
+      })
+      .catch((error) => {
+        console.error("❌ Failed to create player:", error);
+        // Optionally show an alert or fallback:
+        // alert("Could not load player model.");
+      });
 
     // this.app.player = object;
     // this.app.AddObject(object);
     // this.app.AddToLoop(object);
 
     this.planeCtrl = new PlaneControl(this);
-    for (let i = 0; i < 10; i++){
+    for (let i = 0; i < 10; i++) {
       await this.planeCtrl.generatePlane();
     }
+
     this.loop.Add(this.planeCtrl);
 
     this.projectileFactory = new ProjectileFactory(this);
     this.projectileCtrl = new ProjectileControl(this);
     this.loop.Add(this.projectileCtrl);
 
+    // Initialize building system
+    this.buildingFactory = new BuildingFactory(this);
+    this.buildingCtrl = new BuildingControl(this);
+
+    // Add a longer delay to ensure terrain is fully generated
+    setTimeout(() => {
+      console.log("Initializing buildings after terrain generation...");
+      this.buildingCtrl.initializeBuildings(terrain);
+    }, 5000); // 5 second delay (increased from 2 seconds)
+
+    this.loop.Add(this.buildingCtrl);
+
     // const controlSrv = new ControlService(terrain, character, this);
     // this.loop.Add(controlSrv);
 
     this.playerCtrl = new PlayerInteractionControl(this, terrain);
     this.loop.Add(this.playerCtrl);
-
   }
 
   AddToLoop(object) {

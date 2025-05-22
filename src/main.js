@@ -1,4 +1,4 @@
-import { App } from '@/core/app';
+import { App } from "@/core/app";
 
 //  NOTE: set mesh.matrixAutoUpdate = false for static assets in the scene to boost performance
 
