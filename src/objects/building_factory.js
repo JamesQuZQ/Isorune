@@ -29,12 +29,6 @@ export const BUILDING_TYPES = [
     scale: 6.0,
   },
   {
-    name: "Large Building 1",
-    folder: "Large Building 1",
-    objName: "LargeBuilding01",
-    scale: 7.5,
-  },
-  {
     name: "Tiny Building 1",
     folder: "Tiny Building 1",
     objName: "TinyBuilding01",

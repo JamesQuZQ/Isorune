@@ -1,9 +1,9 @@
 import { Vector3 } from "three";
 import { BlockType } from "@/objects/blocks";
 
-const MAX_BUILDINGS_PER_CHUNK = 15; // Reduced number of buildings to avoid crowding
-const MIN_DISTANCE_BETWEEN_BUILDINGS = 25; // Distance between buildings
-const MAX_BUILDINGS_PER_NEW_CHUNK = 2; // Maximum 2 buildings per chunk for lower density
+const MAX_BUILDINGS_PER_CHUNK = 200; // Reduced number of buildings to avoid crowding
+const MIN_DISTANCE_BETWEEN_BUILDINGS = 20; // Distance between buildings
+const MAX_BUILDINGS_PER_NEW_CHUNK = 4; // Maximum 2 buildings per chunk for lower density
 
 export class BuildingControl {
   constructor(app) {

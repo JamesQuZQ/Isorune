@@ -9,6 +9,8 @@ import { Character } from "@/objects/character/character";
 import { PlaneFactory } from "@/objects/plane_factory";
 import { BuildingFactory } from "@/objects/building_factory";
 import { BuildingControl } from "@/logics/building_control";
+import { TreeFactory } from "@/objects/tree_factory";
+import { TreeControl } from "@/logics/tree_control";
 import { Terrain } from "@/objects/terrain/terrain";
 import { Debugger } from "@/tools/debugger";
 import {
@@ -33,6 +35,8 @@ import { ProjectileControl } from "@/logics/projectile_control";
  *  @property {WebGLRenderer} renderer
  *  @property {Camera} camera
  *  @property {Debugger} debugger
+ *  @property {TreeFactory} treeFactory
+ *  @property {TreeControl} treeCtrl
  * */
 export class App {
   static _instance;
@@ -86,31 +90,41 @@ export class App {
 
     const terrain = new Terrain(this.debugger, this.config.texture);
 
-    // const character = new Character(new Vector2(75, 75));
-    // this.AddObject(character.mesh);
+    // Tree system will be initialized after player is created, similar to buildings.
 
     this.planeFactory = new PlaneFactory(this);
-    // const player = await this.planeFactory.createPlayer("1")
-    // console.log(player);
-
     this.planeFactory
       .createPlayer("1")
-      .then((player) => {
+      .then(async (player) => {
         this.player = player;
         const controlSrv = new ControlService(terrain, player, this);
         this.AddObject(player);
         this.AddToLoop(player);
         this.AddToLoop(controlSrv);
+
+        // Initialize Tree System
+        this.treeFactory = new TreeFactory(this);
+        this.treeCtrl = new TreeControl(this);
+        this.loop.Add(this.treeCtrl);
+        try {
+          await this.treeCtrl.initializeTrees(terrain);
+        } catch (error) {
+          console.error("Error initializing trees:", error);
+        }
+
+        // Initialize building system
+        this.buildingFactory = new BuildingFactory(this);
+        this.buildingCtrl = new BuildingControl(this);
+        this.loop.Add(this.buildingCtrl);
+        if (this.buildingCtrl.initializeBuildings) {
+          this.buildingCtrl.initializeBuildings(terrain);
+        }
       })
       .catch((error) => {
         console.error("❌ Failed to create player:", error);
         // Optionally show an alert or fallback:
         // alert("Could not load player model.");
       });
-
-    // this.app.player = object;
-    // this.app.AddObject(object);
-    // this.app.AddToLoop(object);
 
     this.planeCtrl = new PlaneControl(this);
     for (let i = 0; i < 10; i++) {
@@ -122,14 +136,6 @@ export class App {
     this.projectileFactory = new ProjectileFactory(this);
     this.projectileCtrl = new ProjectileControl(this);
     this.loop.Add(this.projectileCtrl);
-
-    // Initialize building system
-    this.buildingFactory = new BuildingFactory(this);
-    this.buildingCtrl = new BuildingControl(this);
-    this.loop.Add(this.buildingCtrl);
-
-    // const controlSrv = new ControlService(terrain, character, this);
-    // this.loop.Add(controlSrv);
 
     this.playerCtrl = new PlayerInteractionControl(this, terrain);
     this.loop.Add(this.playerCtrl);

@@ -318,4 +318,102 @@ export class Terrain {
 
     return soilBlocks;
   }
+
+  /**
+   * Get suitable positions for placing trees on grass blocks
+   * @param {number} levelOfDetail - The level of detail (block size)
+   * @returns {Array<{position: import('three').Vector3, type: number}>} - Array of suitable block positions
+   */
+  getGrassBlocksForTrees(levelOfDetail = Terrain.DEFAULT_LOD) {
+    const grassBlocks = [];
+    const size = levelOfDetail;
+    const borderMargin = 20; // Margin to avoid placing trees too near terrain edges
+
+    // Find the terrain boundaries
+    let minX = Infinity,
+      maxX = -Infinity;
+    let minY = Infinity,
+      maxY = -Infinity;
+
+    this.#blocks.forEach((blockInfo, key) => {
+      const [x, , zCoord] = key.split(",").map(Number); // Use zCoord for the z-axis from key
+      minX = Math.min(minX, x);
+      maxX = Math.max(maxX, x);
+      minY = Math.min(minY, zCoord); // Use zCoord for min Z
+      maxY = Math.max(maxY, zCoord); // Use zCoord for max Z
+    });
+
+    this.#blocks.forEach((blockData, key) => {
+      if (blockData.type === BlockType.GRASS) {
+        const [x, yWorld, zCoord] = key.split(",").map(Number); // yWorld is the height (z in key)
+
+        // Skip blocks that are too close to the terrain borders
+        if (
+          x < minX + borderMargin ||
+          x > maxX - borderMargin ||
+          zCoord < minY + borderMargin || // Use zCoord for Z border check
+          zCoord > maxY - borderMargin // Use zCoord for Z border check
+        ) {
+          return; // Skip this block
+        }
+
+        // Check if this block has no block above it (exposed top)
+        const blockAboveKey = `${x},${yWorld + size},${zCoord}`;
+        const hasNoBlockAbove = !this.#blocks.has(blockAboveKey);
+
+        if (hasNoBlockAbove) {
+          grassBlocks.push({
+            position: { x: x, y: yWorld, z: zCoord }, // Correct mapping: x, height (yWorld), z-axis (zCoord)
+            type: blockData.type,
+          });
+        }
+      }
+    });
+
+    console.log(
+      `Found ${grassBlocks.length} suitable grass blocks for tree placement`
+    );
+    return grassBlocks;
+  }
+
+  /**
+   * Get suitable grass blocks for tree placement within a specific chunk region.
+   * Only returns blocks that have no block directly above them.
+   * @param {number} minX Minimum X coordinate of the chunk region.
+   * @param {number} maxX Maximum X coordinate of the chunk region.
+   * @param {number} minZ Minimum Z coordinate of the chunk region (world Z, corresponds to Y in key).
+   * @param {number} maxZ Maximum Z coordinate of the chunk region (world Z, corresponds to Y in key).
+   * @param {number} levelOfDetail The level of detail (block size).
+   * @returns {Array<{position: {x: number, y: number, z: number}, type: number}>} Array of suitable grass block data.
+   */
+  getGrassBlocksInChunkRegion(minX, maxX, minZ, maxZ, levelOfDetail) {
+    const grassBlocks = [];
+    const size = levelOfDetail;
+    // No borderMargin here as we are already constrained by chunk boundaries for this specific function
+
+    this.#blocks.forEach((blockData, key) => {
+      if (blockData.type === BlockType.GRASS) {
+        const [x, worldY, worldZ] = key.split(",").map(Number); // x, height, z-depth
+
+        // Check if the block is within the specified chunk region boundaries
+        if (x >= minX && x <= maxX && worldZ >= minZ && worldZ <= maxZ) {
+          // Check if this block has no block above it (exposed top)
+          const blockAboveKey = `${x},${worldY + size},${worldZ}`;
+          const hasNoBlockAbove = !this.#blocks.has(blockAboveKey);
+
+          if (hasNoBlockAbove) {
+            grassBlocks.push({
+              position: { x: x, y: worldY, z: worldZ }, // x, height, z-depth
+              type: blockData.type,
+            });
+          }
+        }
+      }
+    });
+
+    // console.log(
+    //   `Found ${grassBlocks.length} suitable grass blocks in chunk region X(${minX}-${maxX}), Z(${minZ}-${maxZ})`
+    // );
+    return grassBlocks;
+  }
 }

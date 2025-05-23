@@ -147,8 +147,16 @@ export class ControlService {
           await this.terrain.RenderChunks(chunk, this.addChunkToApp);
 
           // Place buildings on this newly generated chunk
-          if (this.app.buildingCtrl) {
+          if (
+            this.app.buildingCtrl &&
+            this.app.buildingCtrl.placeBuildsOnChunk
+          ) {
             this.app.buildingCtrl.placeBuildsOnChunk(chunk, this.terrain);
+          }
+
+          // Place trees on this newly generated chunk
+          if (this.app.treeCtrl && this.app.treeCtrl.placeTreesOnChunk) {
+            await this.app.treeCtrl.placeTreesOnChunk(chunk, this.terrain);
           }
         }
       }
