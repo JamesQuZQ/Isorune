@@ -126,13 +126,6 @@ export class App {
     // Initialize building system
     this.buildingFactory = new BuildingFactory(this);
     this.buildingCtrl = new BuildingControl(this);
-
-    // Add a longer delay to ensure terrain is fully generated
-    setTimeout(() => {
-      console.log("Initializing buildings after terrain generation...");
-      this.buildingCtrl.initializeBuildings(terrain);
-    }, 5000); // 5 second delay (increased from 2 seconds)
-
     this.loop.Add(this.buildingCtrl);
 
     // const controlSrv = new ControlService(terrain, character, this);

@@ -2,13 +2,90 @@ import { Vector3 } from "three";
 import { BlockType } from "@/objects/blocks";
 
 const MAX_BUILDINGS_PER_CHUNK = 15; // Reduced number of buildings to avoid crowding
-const MIN_DISTANCE_BETWEEN_BUILDINGS = 25; // Increased distance for better spacing
+const MIN_DISTANCE_BETWEEN_BUILDINGS = 25; // Distance between buildings
+const MAX_BUILDINGS_PER_NEW_CHUNK = 2; // Maximum 2 buildings per chunk for lower density
 
 export class BuildingControl {
   constructor(app) {
     this.buildings = [];
     this.app = app;
     this.placedPositions = new Set(); // Keep track of positions where buildings have been placed
+  }
+
+  /**
+   * Place buildings on a newly generated chunk
+   * @param {Chunk} chunk The newly generated chunk
+   * @param {Terrain} terrain The terrain object
+   */
+  placeBuildsOnChunk(chunk, terrain) {
+    // Get the chunk boundaries
+    const minX = chunk.edge.minEdge.x;
+    const maxX = chunk.edge.maxEdge.x;
+    const minZ = chunk.edge.minEdge.y; // Note: In this codebase, y in edge = z in world
+    const maxZ = chunk.edge.maxEdge.y;
+
+    // Log chunk boundaries for debugging
+    console.log(
+      `Placing buildings on chunk: (${minX},${minZ}) to (${maxX},${maxZ})`
+    );
+
+    // Find suitable soil blocks in this chunk only
+    const soilBlocksData = terrain.getSoilBlocksInChunkRegion(
+      minX,
+      maxX,
+      minZ,
+      maxZ,
+      chunk.LOD
+    );
+
+    if (soilBlocksData.length === 0) {
+      console.log(
+        `No suitable soil blocks found in chunk (${chunk.coordinate.x},${chunk.coordinate.y})`
+      );
+      return;
+    }
+
+    console.log(
+      `Found ${soilBlocksData.length} suitable soil blocks in chunk (${chunk.coordinate.x},${chunk.coordinate.y})`
+    );
+
+    // Convert the soil blocks to Vector3 positions with position on top of the soil block
+    const soilBlocks = soilBlocksData.map(
+      (block) =>
+        // Position on top of the soil block with increased height offset to prevent ground clipping
+        new Vector3(block.position.x, block.position.y + 8, block.position.z)
+    );
+
+    // Randomly select some positions to place buildings
+    const shuffledPositions = this.shuffleArray(soilBlocks);
+
+    // Limit the number of buildings per chunk to avoid performance issues
+    let buildingCount = 0;
+
+    // Place buildings at selected positions
+    for (const position of shuffledPositions) {
+      // Check if we're too close to another building
+      if (!this.isTooCloseToExistingBuilding(position)) {
+        // Call the building factory to create a building
+        this.app.buildingFactory.createBuilding(position);
+
+        // Track this position
+        this.placedPositions.add(`${position.x},${position.y},${position.z}`);
+        buildingCount++;
+
+        // Limit the number of buildings per new chunk
+        if (buildingCount >= MAX_BUILDINGS_PER_NEW_CHUNK) {
+          console.log(
+            `Reached maximum building count (${MAX_BUILDINGS_PER_NEW_CHUNK}) for new chunk`
+          );
+          break;
+        }
+      }
+    }
+
+    console.log(
+      `Placed ${buildingCount} buildings on chunk (${chunk.coordinate.x},${chunk.coordinate.y})`
+    );
   }
 
   /**

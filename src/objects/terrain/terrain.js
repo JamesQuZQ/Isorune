@@ -247,4 +247,75 @@ export class Terrain {
 
     return soilBlocks;
   }
+
+  /**
+   * Get suitable soil blocks for building placement within a specific chunk region
+   * @param {number} minX Minimum X coordinate of the chunk
+   * @param {number} maxX Maximum X coordinate of the chunk
+   * @param {number} minZ Minimum Z coordinate of the chunk
+   * @param {number} maxZ Maximum Z coordinate of the chunk
+   * @param {number} levelOfDetail The level of detail (block size)
+   * @returns {Array<{position: Vector3, type: number}>} Array of suitable positions for building placement
+   */
+  getSoilBlocksInChunkRegion(minX, maxX, minZ, maxZ, levelOfDetail) {
+    const soilBlocks = [];
+    const size = levelOfDetail;
+    const borderMargin = 60; // Large margin from chunk edges to keep buildings towards center
+
+    console.log(
+      `Searching for soil blocks in chunk region: X(${minX} to ${maxX}), Z(${minZ} to ${maxZ})`
+    );
+
+    // Find soil blocks that have nothing above them but are surrounded by soil on sides
+    // AND are within the specified chunk region
+    this.#blocks.forEach((blockData, key) => {
+      if (blockData.type === BlockType.SOIL) {
+        const [x, z, y] = key.split(",").map(Number);
+
+        // Only process blocks within this chunk (plus margin to avoid edge buildings)
+        if (
+          x >= minX + borderMargin &&
+          x <= maxX - borderMargin &&
+          y >= minZ + borderMargin &&
+          y <= maxZ - borderMargin
+        ) {
+          // Check if this block has no block above it (exposed top)
+          const blockAboveKey = `${x},${z + size},${y}`;
+          const hasNoBlockAbove = !this.#blocks.has(blockAboveKey);
+
+          if (hasNoBlockAbove) {
+            // Check if this block has soil neighbors on at least 3 sides
+            const neighbors = [
+              `${x + size},${z},${y}`, // east
+              `${x - size},${z},${y}`, // west
+              `${x},${z},${y + size}`, // north
+              `${x},${z},${y - size}`, // south
+            ];
+
+            let soilNeighborCount = 0;
+            for (const neighborKey of neighbors) {
+              const neighborBlock = this.#blocks.get(neighborKey);
+              if (neighborBlock && neighborBlock.type === BlockType.SOIL) {
+                soilNeighborCount++;
+              }
+            }
+
+            // Only add blocks that have at least 3 soil neighbors
+            if (soilNeighborCount >= 3) {
+              soilBlocks.push({
+                position: { x, y: z, z: y }, // Correct order for Three.js coordinates
+                type: blockData.type,
+              });
+            }
+          }
+        }
+      }
+    });
+
+    console.log(
+      `Found ${soilBlocks.length} suitable soil blocks in chunk region`
+    );
+
+    return soilBlocks;
+  }
 }
