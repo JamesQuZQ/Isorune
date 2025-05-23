@@ -57,6 +57,10 @@ export class App {
     return this.config.renderer;
   }
 
+  setPlayerNum(playerNumString){
+    this.playerNum = playerNumString;
+  }
+
   async InitAsync() {
     this.debugger = new Debugger();
 
@@ -84,19 +88,19 @@ export class App {
     // const player = await this.planeFactory.createPlayer("1")
     // console.log(player);
 
-  this.planeFactory.createPlayer("1")
-  .then((player) => {
-    this.player = player;
-    const controlSrv = new ControlService(terrain, player, this);
-    this.AddObject(player);
-    this.AddToLoop(player);
-    this.AddToLoop(controlSrv);
-  })
-  .catch((error) => {
-    console.error("❌ Failed to create player:", error);
-    // Optionally show an alert or fallback:
-    // alert("Could not load player model.");
-  });
+    this.planeFactory.createPlayer(this.playerNum)
+    .then((player) => {
+      this.player = player;
+      const controlSrv = new ControlService(terrain, player, this);
+      this.AddObject(player);
+      this.AddToLoop(player);
+      this.AddToLoop(controlSrv);
+    })
+    .catch((error) => {
+      console.error("❌ Failed to create player:", error);
+      // Optionally show an alert or fallback:
+      // alert("Could not load player model.");
+    });
 
 
     // this.app.player = object;
@@ -116,7 +120,7 @@ export class App {
     // const controlSrv = new ControlService(terrain, character, this);
     // this.loop.Add(controlSrv);
 
-    this.playerCtrl = new PlayerInteractionControl(this, terrain);
+    this.playerCtrl = new PlayerInteractionControl(this);
     this.loop.Add(this.playerCtrl);
 
   }

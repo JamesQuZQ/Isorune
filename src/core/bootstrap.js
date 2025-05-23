@@ -41,7 +41,7 @@ export class Bootstrap {
 
   CreateRenderer() {
     const canvas = document.querySelector('#my_canvas');
-    const renderer = new THREE.WebGLRenderer({ antialias: true, canvas });
+    const renderer = new THREE.WebGLRenderer({ antialias: false, canvas });
     renderer.setSize(window.innerWidth, window.innerHeight);
     renderer.toneMapping = THREE.ACESFilmicToneMapping;
     renderer.outputEncoding = THREE.sRGBEncoding;

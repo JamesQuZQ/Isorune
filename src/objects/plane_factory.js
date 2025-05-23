@@ -67,8 +67,8 @@ export class PlaneFactory {
 
 
   async createPlane(position) {
-    // const planeNumber = this.getRandomPlaneNum();
-    const planeNumber = 6;
+    const planeNumber = this.getRandomPlaneNum();
+    // const planeNumber = 6;
     const mtlLoader = new MTLLoader();
     mtlLoader.setPath('src/assets/planes/');
     mtlLoader.load(`Plane0${planeNumber}.mtl`, (materials) => {
