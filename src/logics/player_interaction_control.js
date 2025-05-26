@@ -13,8 +13,6 @@ const x = new Vector3(1, 0, 0);
 const y = new Vector3(0, 1, 0);
 const z = new Vector3(0, 0, 1);
 
-// const planePosition = new Vector3(0, 5, 7);
-
 let yawVelocity = 0;
 let pitchVelocity = 0;
 let rollVelocity = 0;
@@ -57,9 +55,6 @@ export class PlayerInteractionControl {
             this.app.player.matrixAutoUpdate = true;
         }
 
-        // --- Speed Control ---
-        // Note: How 'speed' is used depends on your movement logic elsewhere.
-        // Applying delta here might make sense depending on how you use player.speed
         const speedChange = SPEED_INCREMENT * delta;
         if (this.keyMap['KeyQ'] && this.app.player.speed < MAX_SPEED) {
             this.app.player.speed += speedChange;
