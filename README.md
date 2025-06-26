@@ -71,4 +71,5 @@ styles/
 Special thanks to the following creators for their high-quality asset contributions:
 
 - [Max Parata](https://maxparata.itch.io/voxel-plane) – Voxel plane models
-- [AurynSky](https://aurynsky.itch.io/rockets-bombs-and-missiles-pack-3d-assets) – Missile models  
+- [AurynSky](https://aurynsky.itch.io/rockets-bombs-and-missiles-pack-3d-assets) – Missile models
+- [MsRanaApps](https://msrana.itch.io/explosion-pack-2in1) – Explosion effects
